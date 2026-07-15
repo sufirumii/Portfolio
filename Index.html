@@ -140,14 +140,20 @@
         }
         .link-underline:hover::after { width: 100%; }
 
-        /* --- AWARD IMAGE HOVER REVEAL --- */
+        /* --- AWARD IMAGE HOVER (Desktop) & TAP (Mobile) --- */
         .hover-image-reveal .image-overlay {
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        /* Desktop Hover */
         .hover-image-reveal:hover .image-overlay {
             opacity: 1;
+        }
+        /* Mobile Tap (Activated via JS) */
+        .hover-image-reveal.show-image .image-overlay {
+            opacity: 1;
+            pointer-events: auto;
         }
     </style>
 </head>
@@ -169,6 +175,8 @@
                 Rumi.Sufi
                 <span class="text-purple-400">/&gt;</span>
             </div>
+            
+            <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-10 text-sm text-gray-400">
                 <a href="#recognition" class="link-underline hover:text-white transition-colors duration-300">Recognition</a>
                 <a href="#projects" class="link-underline hover:text-white transition-colors duration-300">Projects</a>
@@ -183,6 +191,22 @@
                     <i data-lucide="brain" class="w-4 h-4"></i> Hugging Face
                 </a>
             </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden text-gray-300 hover:text-white">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Dropdown Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-black/95 backdrop-blur-xl border-b border-white/5 px-6 py-6 space-y-5">
+            <a href="#recognition" class="block text-lg text-gray-200 hover:text-white transition-colors">Recognition</a>
+            <a href="#projects" class="block text-lg text-gray-200 hover:text-white transition-colors">Projects</a>
+            <a href="#contact" class="block text-lg text-gray-200 hover:text-white transition-colors">Contact</a>
+            <div class="flex gap-3 pt-4 border-t border-white/10">
+                <a href="https://github.com/sufirumii" target="_blank" rel="noreferrer" class="flex-1 text-center px-4 py-2.5 bg-white text-black text-sm font-semibold rounded-full">GitHub</a>
+                <a href="https://huggingface.co/Rumiii" target="_blank" rel="noreferrer" class="flex-1 text-center px-4 py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-full">HF Profile</a>
+            </div>
         </div>
     </nav>
 
@@ -196,7 +220,7 @@
                 Available for Research & Roles
             </div>
             
-            <h1 class="hero-item hero-delay-2 text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold mb-10 leading-[0.85] tracking-[-0.05em]">
+            <h1 class="hero-item hero-delay-2 text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-extrabold mb-10 leading-[0.85] tracking-[-0.05em]">
                 Rumi Iqbal<br/><span class="animated-gradient-text">Sufi</span>
             </h1>
             
@@ -208,38 +232,26 @@
                 Focused on large language models, continued pre-training, supervised fine-tuning, and retrieval augmented generation.
             </p>
 
-            <!-- Tech Stack Marquee (Moved Here) -->
+            <!-- Tech Stack Marquee -->
             <div class="hero-item hero-delay-5 w-full max-w-3xl mx-auto mb-12 marquee-container relative">
                 <div class="marquee-track flex gap-3 w-max">
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Python</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">PyTorch</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">TensorFlow</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Transformers</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">LoRA / QLoRA</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Continued Pre-Training</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">RAG</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Computer Vision</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">ResNet50</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Quantization</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">FAISS</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Flask</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">OpenCV</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Linux</div>
                     <!-- Set 2 (Duplicate) -->
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Python</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">PyTorch</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">TensorFlow</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Transformers</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">LoRA / QLoRA</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Continued Pre-Training</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">RAG</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Computer Vision</div>
                     <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">ResNet50</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Quantization</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">FAISS</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Flask</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">OpenCV</div>
-                    <div class="px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg text-xs text-gray-400 font-mono">Linux</div>
                 </div>
             </div>
 
@@ -252,10 +264,6 @@
                     <i data-lucide="github" class="w-5 h-5 text-purple-400"></i>
                     GitHub Profile
                 </a>
-                <a href="https://huggingface.co/Rumiii" target="_blank" rel="noreferrer" class="group flex items-center justify-center gap-3 px-9 py-4 bg-white/[0.03] border border-white/10 text-white font-medium rounded-full hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300 backdrop-blur-sm">
-                    <i data-lucide="brain" class="w-5 h-5 text-blue-400"></i>
-                    Hugging Face
-                </a>
             </div>
         </div>
     </header>
@@ -266,10 +274,10 @@
             <div class="reveal mb-20 text-center">
                 <p class="text-sm font-mono uppercase tracking-[0.3em] text-purple-400 mb-4">Recognition</p>
                 <h2 class="text-4xl md:text-5xl font-bold mb-6 tracking-tight">International Awards</h2>
-                <p class="text-gray-500 max-w-2xl mx-auto text-lg font-light">Hover over the awards to reveal the official certificates.</p>
+                <p class="text-gray-500 max-w-2xl mx-auto text-lg font-light">Hover (or tap on mobile) to reveal the official certificates.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 
                 <!-- 1. iCAN 2025 — Gold Medal -->
                 <div class="reveal reveal-delay-1 glass-card glow-yellow rounded-3xl p-8 text-center flex flex-col hover-image-reveal relative overflow-hidden">
@@ -284,7 +292,6 @@
                         <p class="text-gray-600 text-sm mt-1">Int'l Invention Competition • Toronto</p>
                         <div class="mt-auto pt-6 border-t border-white/5">
                             <p class="text-gray-300 text-xs font-mono">MediGuard AI Rover</p>
-                            <p class="text-gray-600 text-xs mt-1.5">Autonomous Medical Emergency System</p>
                         </div>
                     </div>
                     <div class="image-overlay absolute inset-0 bg-[#080808] backdrop-blur-xl z-20 flex items-center justify-center p-6 rounded-3xl">
@@ -305,7 +312,6 @@
                         <p class="text-gray-600 text-sm mt-1">Int'l Invention Competition • Toronto</p>
                         <div class="mt-auto pt-6 border-t border-white/5">
                             <p class="text-gray-300 text-xs font-mono">MediGuard AI Rover</p>
-                            <p class="text-gray-600 text-xs mt-1.5">Autonomous Medical Emergency System</p>
                         </div>
                     </div>
                     <div class="image-overlay absolute inset-0 bg-[#080808] backdrop-blur-xl z-20 flex items-center justify-center p-6 rounded-3xl">
@@ -326,7 +332,6 @@
                         <p class="text-gray-600 text-sm mt-1">Organization of the European Inventors</p>
                         <div class="mt-auto pt-6 border-t border-white/5">
                             <p class="text-gray-300 text-xs font-mono">MediGuard AI Rover</p>
-                            <p class="text-gray-600 text-xs mt-1.5">Autonomous Medical Emergency System</p>
                         </div>
                     </div>
                     <div class="image-overlay absolute inset-0 bg-[#080808] backdrop-blur-xl z-20 flex items-center justify-center p-6 rounded-3xl">
@@ -347,7 +352,6 @@
                         <p class="text-gray-600 text-sm mt-1">Special Award (HUM)</p>
                         <div class="mt-auto pt-6 border-t border-white/5">
                             <p class="text-gray-300 text-xs font-mono">MediGuard AI Rover</p>
-                            <p class="text-gray-600 text-xs mt-1.5">Autonomous Medical Emergency System</p>
                         </div>
                     </div>
                     <div class="image-overlay absolute inset-0 bg-[#080808] backdrop-blur-xl z-20 flex items-center justify-center p-6 rounded-3xl">
@@ -367,7 +371,6 @@
                         <p class="text-gray-600 text-sm mt-1">Int'l Business & Innovation Exhibition</p>
                         <div class="mt-auto pt-6 border-t border-white/5">
                             <p class="text-gray-300 text-xs font-mono">SentiVita RS:1</p>
-                            <p class="text-gray-600 text-xs mt-1.5">Max Fusion Healthcare AI Agent</p>
                         </div>
                     </div>
                     <div class="image-overlay absolute inset-0 bg-[#080808] backdrop-blur-xl z-20 flex items-center justify-center p-6 rounded-3xl">
@@ -387,7 +390,6 @@
                         <p class="text-gray-600 text-sm mt-1">University Project Competition</p>
                         <div class="mt-auto pt-6 border-t border-white/5">
                             <p class="text-gray-300 text-xs font-mono">SentiVita RS:1 Max Fusion</p>
-                            <p class="text-gray-600 text-xs mt-1.5">Healthcare AI Agent — Finetuned LLaMA-3.2</p>
                         </div>
                     </div>
                     <div class="image-overlay absolute inset-0 bg-[#080808] backdrop-blur-xl z-20 flex items-center justify-center p-6 rounded-3xl">
@@ -410,18 +412,18 @@
                 </p>
             </div>
 
-            <!-- Bento Grid for Project Screenshots (Uncropped) -->
+            <!-- Bento Grid for Project Screenshots -->
             <div class="reveal reveal-delay-1 grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                <div class="h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
+                <div class="h-[280px] sm:h-[350px] md:h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
                     <img src="https://github.com/user-attachments/assets/ca8724e4-6c3c-424f-bb86-a585e0e1349a" alt="Aetherion Main Interface" class="max-w-full max-h-full object-contain rounded-lg" />
                 </div>
-                <div class="h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
+                <div class="h-[280px] sm:h-[350px] md:h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
                     <img src="https://github.com/user-attachments/assets/ad67296b-e4de-4e81-962b-703ecfb0d4ca" alt="Disease Classifier Interface" class="max-w-full max-h-full object-contain rounded-lg" />
                 </div>
-                <div class="h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
+                <div class="h-[280px] sm:h-[350px] md:h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
                     <img src="https://github.com/user-attachments/assets/70d5d785-7532-492b-b97e-47d4e8accbb1" alt="Live Demonstration" class="max-w-full max-h-full object-contain rounded-lg" />
                 </div>
-                <div class="h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
+                <div class="h-[280px] sm:h-[350px] md:h-[450px] w-full bg-black/40 border border-white/5 rounded-2xl flex items-center justify-center p-6 hover:border-cyan-500/30 transition-colors duration-300">
                     <img src="https://github.com/user-attachments/assets/dc6298cd-e0cb-409e-b954-28ffe0002f8f" alt="APU and MOH" class="max-w-full max-h-full object-contain rounded-lg" />
                 </div>
             </div>
@@ -498,12 +500,55 @@
 
     <script>
         lucide.createIcons();
+
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        // Close menu when a link is clicked
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Mobile Tap-to-Reveal Logic (Isolated from Desktop Hover)
+        const awardCards = document.querySelectorAll('.hover-image-reveal');
+        awardCards.forEach(card => {
+            card.addEventListener('click', (e) => {
+                // Only apply the toggle if the screen width is typically mobile/tablet
+                if (window.innerWidth < 768) {
+                    e.stopPropagation(); // Prevent immediate closing
+                    // Close any other currently open cards first
+                    awardCards.forEach(otherCard => {
+                        if (otherCard !== card && otherCard.classList.contains('show-image')) {
+                            otherCard.classList.remove('show-image');
+                        }
+                    });
+                    // Toggle the tapped card
+                    card.classList.toggle('show-image');
+                }
+            });
+        });
+        // Close open cards if clicking empty space on mobile
+        document.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                awardCards.forEach(card => {
+                    card.classList.remove('show-image');
+                });
+            }
+        });
+
+
+        // Cinematic Scroll Reveal Logic
         const revealElements = document.querySelectorAll('.reveal');
         const revealOnScroll = () => {
             revealElements.forEach(el => {
                 const windowHeight = window.innerHeight;
                 const elementTop = el.getBoundingClientRect().top;
-                if (elementTop < windowHeight - 120) {
+                if (elementTop < windowHeight - 100) {
                     el.classList.add('active');
                 }
             });
