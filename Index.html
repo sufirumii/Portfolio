@@ -108,11 +108,6 @@
             transform:translateY(-1px);
         }
 
-        .bullet-icon-box {
-            transition:transform 0.25s cubic-bezier(0.16,1,0.3,1);
-        }
-        .bullet-row:hover .bullet-icon-box { transform:scale(1.1); }
-
         .hover-image-reveal .image-overlay {
             opacity:0; pointer-events:none;
             transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1);
@@ -132,9 +127,6 @@
 
         @keyframes float-subtle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
         .float-subtle{animation:float-subtle 5s ease-in-out infinite}
-
-        .date-bar{position:relative;height:3px;border-radius:2px;overflow:hidden}
-        .date-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;transition:width 1.2s cubic-bezier(0.16,1,0.3,1)}
 
         .award-card {
             background:#ffffff;
@@ -265,23 +257,19 @@
                         <div class="flex-1 min-w-0">
                             <h3 class="text-xl md:text-2xl font-bold tracking-tight text-ink-0 mb-0.5">AI Engineer</h3>
                             <p class="text-blue-600 text-base font-semibold mb-2">Excelra</p>
-                            <p class="text-sm text-ink-5 font-mono">May 2025 — Present</p>
-                        </div>
-                    </div>
-                    <div class="mb-6">
-                        <div class="date-bar bg-surface-3 w-full">
-                            <div class="date-bar-fill bg-gradient-to-r from-blue-500 to-blue-400" id="datebar-excelra" style="width:0%"></div>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <span class="text-sm text-ink-5 font-mono">May 2025 — Present</span>
+                                <span class="hidden sm:inline text-surface-3">•</span>
+                                <span class="flex items-center gap-1 text-sm text-ink-4">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500"></i>
+                                    Hyderabad, Telangana
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <p class="text-ink-4 text-[15px] leading-relaxed mb-5">
-                        Building AI-powered solutions at the intersection of large language models and life sciences. Working on next-generation systems for bioinformatics and enterprise knowledge retrieval.
+                        Built an AI Powered Drug Discovery Course for internal employee training with quizzes and gamification.
                     </p>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">LLMs</span>
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">RAG</span>
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">Fine-Tuning</span>
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">Bioinformatics</span>
-                    </div>
                 </div>
 
                 <!-- Asrix -->
@@ -298,47 +286,21 @@
                                 <span class="text-sm text-ink-5 font-mono">May 2024 — October 2024</span>
                             </div>
                             <h3 class="text-xl md:text-2xl font-bold tracking-tight text-ink-0 mb-0.5">Software Dev Intern</h3>
-                            <p class="text-blue-600 text-base font-semibold">Asrix Prime Berhad</p>
+                            <p class="text-blue-600 text-base font-semibold mb-2">Asrix Prime Berhad</p>
+                            <div class="flex items-center gap-1 text-sm text-ink-4">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500"></i>
+                                Empire Tower, Subang Jaya, Selangor
+                            </div>
                         </div>
                     </div>
-                    <div class="space-y-3" id="asrix-bullets">
-                        <div class="bullet-row flex items-start gap-3 cursor-default">
-                            <div class="bullet-icon-box mt-0.5 shrink-0 w-7 h-7 rounded-md bg-violet-50 border border-violet-100 flex items-center justify-center">
-                                <i data-lucide="brain" class="w-3.5 h-3.5 text-violet-600"></i>
-                            </div>
-                            <p class="text-ink-3 text-[15px] leading-relaxed pt-0.5">Fine-tuned SLMs on clinical data</p>
-                        </div>
-                        <div class="bullet-row flex items-start gap-3 cursor-default">
-                            <div class="bullet-icon-box mt-0.5 shrink-0 w-7 h-7 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center">
-                                <i data-lucide="lock" class="w-3.5 h-3.5 text-blue-600"></i>
-                            </div>
-                            <p class="text-ink-3 text-[15px] leading-relaxed pt-0.5">Developed authentication system</p>
-                        </div>
-                        <div class="bullet-row flex items-start gap-3 cursor-default">
-                            <div class="bullet-icon-box mt-0.5 shrink-0 w-7 h-7 rounded-md bg-cyan-50 border border-cyan-100 flex items-center justify-center">
-                                <i data-lucide="database" class="w-3.5 h-3.5 text-cyan-600"></i>
-                            </div>
-                            <p class="text-ink-3 text-[15px] leading-relaxed pt-0.5">Built traditional RAG pipelines</p>
-                        </div>
-                        <div class="bullet-row flex items-start gap-3 cursor-default">
-                            <div class="bullet-icon-box mt-0.5 shrink-0 w-7 h-7 rounded-md bg-amber-50 border border-amber-100 flex items-center justify-center">
-                                <i data-lucide="target" class="w-3.5 h-3.5 text-amber-600"></i>
-                            </div>
-                            <p class="text-ink-3 text-[15px] leading-relaxed pt-0.5">AI accuracy testing across domains</p>
-                        </div>
-                        <div class="bullet-row flex items-start gap-3 cursor-default">
-                            <div class="bullet-icon-box mt-0.5 shrink-0 w-7 h-7 rounded-md bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                                <i data-lucide="terminal" class="w-3.5 h-3.5 text-emerald-600"></i>
-                            </div>
-                            <p class="text-ink-3 text-[15px] leading-relaxed pt-0.5">Tuned Porteus OS for faster boot</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2 mt-5">
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">SLM</span>
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">RAG</span>
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">Auth</span>
-                        <span class="tag px-3 py-1.5 bg-surface-2 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono cursor-default">Linux</span>
-                    </div>
+                    
+                    <ul class="space-y-2.5 list-disc list-inside text-ink-3 text-[15px] leading-relaxed">
+                        <li>Fine-tuned SLMs on clinical data</li>
+                        <li>Developed authentication system</li>
+                        <li>Built traditional RAG pipelines</li>
+                        <li>AI accuracy testing across domains</li>
+                        <li>Tuned Porteus OS for faster boot</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -569,14 +531,6 @@
         };
         window.addEventListener('scroll', onScroll);
         setTimeout(onScroll, 100);
-
-        // Date bar
-        const db = document.getElementById('datebar-excelra');
-        if (db) {
-            new IntersectionObserver(entries => {
-                entries.forEach(e => { if (e.isIntersecting) setTimeout(()=>db.style.width='15%', 300); });
-            }, {threshold:0.3}).observe(db);
-        }
     </script>
 </body>
 </html>
