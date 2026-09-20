@@ -1,0 +1,248 @@
+# =============================================================================
+# Qwen3-8B x Toucan-1.5M (SFT) — 1000 samples, stratified QLoRA   [v4]
+#
+# PASTE INTO THE NEXT CELL OF THE KERNEL WHERE YOU JUST VERIFIED:
+#     visible devices: 1 | free VRAM ~14.5 GiB
+# Do NOT restart — that state is what we want.
+#
+# FIXES OVER v3:
+#  1. LENGTH FILTER MOVED BEFORE QUOTAS. v3 filled quotas first, then dropped
+#     441 over-length rows — which gutted exactly the stage that matters
+#     (multi-turn 400 -> 144) while short `irrelevant` rows survived (185/200).
+#     Now the pool is rendered and length-filtered FIRST, so each quota is
+#     filled with rows that are already known to fit.
+#  2. Model loads BEFORE selection (render/length-check needs the tokenizer).
+#  3. batch=1 x accum=8 instead of 2 x 4 — same effective batch of 8, lower
+#     peak memory, less gradient offloading.
+#  4. 1 epoch, not 2. Get a signal first; extend later if underfit.
+# =============================================================================
+
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+import ast, json, random
+from collections import Counter
+from datasets import load_dataset, concatenate_datasets
+from unsloth import FastLanguageModel
+from unsloth.chat_templates import train_on_responses_only
+from trl import SFTTrainer, SFTConfig
+
+MODEL_NAME     = "unsloth/Qwen3-8B"
+MAX_SEQ_LENGTH = 4096
+CANDIDATE_POOL = 8000          # smaller: every row gets rendered + tokenized now
+QUOTAS = {
+    "multi-turn":            400,
+    "single-turn-original":  250,
+    "single-turn-diversify": 150,
+    "irrelevant":            200,
+}
+LORA_DIR   = "/kaggle/working/qwen3-8b-toucan-lora"
+MERGED_DIR = "/kaggle/working/qwen3-8b-toucan-merged"
+TRAIN_OUT  = "/kaggle/working/train_outputs"
+SEED = 42
+random.seed(SEED)
+
+raw_ds = load_dataset("Agent-Ark/Toucan-1.5M", "SFT", split="train")
+print(f">>> [1/8] loaded {len(raw_ds)} rows")
+
+# ----------------------------------------------------------------- parsers --
+def _load_messages(example):
+    convo = example["messages"]
+    if isinstance(convo, str):
+        try:    return json.loads(convo)
+        except Exception: return None
+    return convo
+
+def parse_tool_call(content):
+    try:
+        obj = ast.literal_eval(content) if isinstance(content, str) else content
+    except (ValueError, SyntaxError):
+        try:    obj = json.loads(content)
+        except Exception: return None
+    if not isinstance(obj, dict) or "name" not in obj:
+        return None
+    args = obj.get("arguments", {})
+    if isinstance(args, str):
+        try:    args = json.loads(args)
+        except Exception: pass
+    return obj["name"], args
+
+def build_messages(example):
+    convo = _load_messages(example)
+    if not convo:
+        return None
+    out = []
+    for turn in convo:
+        role, content = turn.get("role"), turn.get("content", "")
+        if role == "tool_call":
+            parsed = parse_tool_call(content)
+            if parsed is None:
+                return None
+            name, args = parsed
+            call = {"type": "function",
+                    "function": {"name": name, "arguments": args}}
+            if out and out[-1]["role"] == "assistant":
+                out[-1].setdefault("tool_calls", []).append(call)
+            else:
+                out.append({"role": "assistant", "content": "", "tool_calls": [call]})
+        elif role == "tool_response":
+            out.append({"role": "tool", "content": content})
+        elif role in ("user", "assistant", "system"):
+            out.append({"role": role, "content": content})
+        else:
+            return None
+    return out
+
+def parse_tools(example):
+    tools = example.get("tools")
+    if not tools:
+        return None
+    if isinstance(tools, str):
+        try:    tools = json.loads(tools)
+        except Exception: return None
+    return tools if isinstance(tools, list) and tools else None
+
+def count_tool_calls(example):
+    convo = _load_messages(example)
+    return sum(1 for t in convo if t.get("role") == "tool_call") if convo else 0
+
+assert count_tool_calls(raw_ds[3]) > 0, "PARSER BROKEN"
+print(">>> [2/8] parsers OK")
+
+# --------------------------------------------- model FIRST (need tokenizer) --
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name=MODEL_NAME,
+    max_seq_length=MAX_SEQ_LENGTH,
+    dtype=None,
+    load_in_4bit=True,
+)
+model = FastLanguageModel.get_peft_model(
+    model,
+    r=16,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                    "gate_proj", "up_proj", "down_proj"],
+    lora_alpha=16,
+    lora_dropout=0,
+    bias="none",
+    use_gradient_checkpointing="unsloth",
+    random_state=SEED,
+)
+print(">>> [3/8] model loaded")
+
+# --------------------------------------- render + length-filter THE POOL ----
+def render(example):
+    msgs  = build_messages(example)
+    tools = parse_tools(example)
+    if msgs is None:
+        return {"text": ""}
+    try:
+        return {"text": tokenizer.apply_chat_template(
+            msgs, tools=tools, tokenize=False, add_generation_prompt=False)}
+    except Exception:
+        return {"text": ""}
+
+pool = raw_ds.shuffle(seed=SEED).select(range(min(CANDIDATE_POOL, len(raw_ds))))
+pool = pool.map(lambda ex: {"_n_calls": count_tool_calls(ex)})
+pool = pool.map(render).filter(lambda ex: len(ex["text"]) > 0)
+print("    tokenizing pool for length filter (this takes a minute)...")
+pool = pool.map(lambda ex: {"_len": len(tokenizer(ex["text"]).input_ids)})
+
+before = dict(Counter(pool["subset_name"]))
+pool = pool.filter(lambda ex: ex["_len"] <= MAX_SEQ_LENGTH)
+after = dict(Counter(pool["subset_name"]))
+print(f">>> [4/8] pool before length filter: {before}")
+print(f"          pool after  length filter: {after}")
+
+# ---------------------------------------------------- stratified selection --
+parts = []
+for name, quota in QUOTAS.items():
+    stage = pool.filter(lambda ex: ex["subset_name"] == name)
+    if name == "irrelevant":
+        stage = stage.shuffle(seed=SEED + 1)           # keep zero-call rows
+    else:
+        stage = stage.filter(lambda ex: ex["_n_calls"] > 0)
+        stage = stage.sort("_n_calls", reverse=True)
+        stage = stage.select(range(min(quota * 2, len(stage)))).shuffle(seed=SEED + 1)
+    take = min(quota, len(stage))
+    if take < quota:
+        print(f"    WARNING: {name} only {take}/{quota}")
+    parts.append(stage.select(range(take)))
+
+subset = concatenate_datasets(parts).shuffle(seed=SEED + 2)
+calls = sorted(subset["_n_calls"])
+lens  = sorted(subset["_len"])
+print(f">>> [5/8] FINAL {len(subset)} rows | {dict(Counter(subset['subset_name']))}")
+print(f"          calls/row med={calls[len(calls)//2]} max={calls[-1]} "
+      f"| zero-call={sum(1 for c in calls if c==0)}")
+print(f"          tokens/row med={lens[len(lens)//2]} max={lens[-1]}")
+
+n_calls = sum(1 for t in subset["text"] if "<tool_call>" in t)
+n_tools = sum(1 for t in subset["text"] if "<tools>"     in t)
+print(f"          <tool_call> in {n_calls}/{len(subset)} | <tools> in {n_tools}/{len(subset)}")
+assert n_calls > 0.70 * len(subset), "TOOL CALLS NOT SURVIVING — STOP"
+assert n_tools > 0.90 * len(subset), "TOOL SCHEMAS MISSING — STOP"
+
+# ------------------------------------------------------------------- train --
+trainer = SFTTrainer(
+    model=model,
+    tokenizer=tokenizer,
+    train_dataset=subset,
+    args=SFTConfig(
+        output_dir=TRAIN_OUT,
+        per_device_train_batch_size=1,     # lighter peak memory
+        gradient_accumulation_steps=8,     # effective batch still 8
+        num_train_epochs=1,
+        learning_rate=2e-4,
+        lr_scheduler_type="cosine",
+        warmup_steps=10,
+        logging_steps=5,
+        optim="adamw_8bit",
+        fp16=True,
+        bf16=False,
+        save_strategy="no",
+        seed=SEED,
+        dataset_text_field="text",
+        max_seq_length=MAX_SEQ_LENGTH,
+        report_to="none",
+    ),
+)
+trainer = train_on_responses_only(
+    trainer,
+    instruction_part="<|im_start|>user\n",
+    response_part="<|im_start|>assistant\n",
+)
+print(">>> [6/8] training — watch the first 5 steps. If >15s/step, interrupt.")
+print(trainer.train())
+
+# -------------------------------------------------------------------- save --
+os.makedirs(LORA_DIR, exist_ok=True)
+model.save_pretrained(LORA_DIR)
+tokenizer.save_pretrained(LORA_DIR)
+print(f">>> [7/8] adapter -> {LORA_DIR}")
+
+os.makedirs(MERGED_DIR, exist_ok=True)
+model.save_pretrained_merged(MERGED_DIR, tokenizer, save_method="merged_16bit")
+print(f">>> [8/8] merged  -> {MERGED_DIR}")
+
+# ---------------------------------------------- two-sided behaviour probe ---
+FastLanguageModel.for_inference(model)
+
+def probe(example, label):
+    msgs, tools = build_messages(example), parse_tools(example)
+    trimmed = []
+    for m in msgs:
+        trimmed.append(m)
+        if m["role"] == "user":
+            break
+    prompt = tokenizer.apply_chat_template(
+        trimmed, tools=tools, tokenize=False, add_generation_prompt=True)
+    inp = tokenizer(prompt, return_tensors="pt").to(model.device)
+    out = model.generate(**inp, max_new_tokens=512,
+                         temperature=0.6, top_p=0.95, top_k=20)
+    gen = tokenizer.decode(out[0][inp.input_ids.shape[1]:], skip_special_tokens=False)
+    print(f"\n=== {label} | emitted <tool_call>: {'<tool_call>' in gen} ===")
+    print(gen[:800])
+
+holdout = raw_ds.shuffle(seed=999).select(range(3000))
+probe(next(r for r in holdout if r["subset_name"] == "multi-turn"), "SHOULD call")
+probe(next(r for r in holdout if r["subset_name"] == "irrelevant"), "should NOT call")
