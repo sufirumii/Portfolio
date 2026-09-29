@@ -121,7 +121,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
 <!-- Recognition -->
 <section id="recognition" class="wave flip py-20 md:py-28 px-6">
   <div class="max-w-6xl mx-auto">
-    <div class="reveal mb-14 text-center"><p class="eyebrow mb-3">Recognition</p><h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-3">International Awards</h2><p class="text-steel-400 text-[15px]">Hover (or tap on mobile) to reveal the official certificates.</p></div>
+    <div class="reveal mb-14 text-center"><p class="eyebrow mb-3">Achievements</p><h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-3">Recognition</h2><p class="text-steel-400 text-[15px]">Hover (or tap on mobile) to reveal the official certificates.</p></div>
     <div id="awards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"></div>
   </div>
 </section>
@@ -203,7 +203,7 @@ $('awards').innerHTML=aw.map((a,i)=>`<div class="reveal card hover-image-reveal 
 <div class="flex flex-col h-full"><div class="mb-4"><span class="px-2.5 py-0.5 bg-${a[5]}-50 text-${a[5]}-700 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-${a[5]}-200">${a[0]}</span></div>
 <div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-${a[5]}-50 border border-${a[5]}-100 flex items-center justify-center"><i data-lucide="${a[4]}" class="w-7 h-7 text-${a[5]}-600"></i></div>
 <h3 class="text-xl font-bold mb-1.5">${a[1]}</h3><p class="text-steel-400 text-sm">${a[2]}</p><div class="mt-auto pt-5 border-t border-steel-100"><p class="text-steel-600 text-sm font-mono">${a[3]}</p></div></div>
-<div class="image-overlay absolute inset-0 bg-white/95 z-20 flex items-center justify-center p-5"><img src="https://github.com/user-attachments/assets/${a[6]}" alt="${a[1]} certificate" loading="lazy" class="max-w-full max-h-full object-contain rounded-lg shadow-lg"></div></div>`).join('');
+<div class="image-overlay absolute inset-0 bg-white/95 z-20 flex items-center justify-center p-5"><img src="https://github.com/user-attachments/assets/${a[6]}" alt="${a[1]} certificate" loading="lazy" class="max-w-full max-h-full object-contain rounded-lg shadow-lg"></div></div>`).join('')+`<div class="reveal card overflow-hidden" style="transition-delay:.42s"><img src="Me.jpg" alt="Rumi demonstrating the project to government officials" loading="lazy" class="w-full h-full object-cover" style="aspect-ratio:1061/717"></div>`;
 
 $('shots').innerHTML=['ca8724e4-6c3c-424f-bb86-a585e0e1349a','ad67296b-e4de-4e81-962b-703ecfb0d4ca','70d5d785-7532-492b-b97e-47d4e8accbb1','dc6298cd-e0cb-409e-b954-28ffe0002f8f'].map(s=>`<div class="h-64 sm:h-80 md:h-96 bg-steel-50 border border-steel-200 rounded-xl flex items-center justify-center p-5 hover:border-blue-300 transition-colors"><img src="https://github.com/user-attachments/assets/${s}" alt="Project screenshot" loading="lazy" class="max-w-full max-h-full object-contain rounded-lg"></div>`).join('');
 
