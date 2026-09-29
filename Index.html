@@ -1,600 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rumi Iqbal Sufi — Forward Deployed AI Engineer</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Added Playfair Display for beautiful serif headlines -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                        serif: ['"Playfair Display"', 'serif'], // Added serif font family
-                    },
-                    colors: {
-                        surface: { 0:'#ffffff', 1:'#f8fafc', 2:'#f1f5f9', 3:'#e2e8f0' },
-                        ink: { 0:'#0f172a', 1:'#1e293b', 2:'#334155', 3:'#475569', 4:'#64748b', 5:'#94a3b8' },
-                    }
-                }
-            }
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rumi Iqbal Sufi — Forward Deployed AI Engineer</title>
+<meta name="description" content="Forward Deployed AI Engineer at Excelra building agentic and medical AI systems for life sciences.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;1,400;1,600&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['JetBrains Mono','monospace'],serif:['"Playfair Display"','serif']},
+colors:{navy:'#07121f',steel:{50:'#f5f8fb',100:'#e8eef5',200:'#d3dee9',300:'#b4c4d6',400:'#8ea3ba',500:'#64798f',600:'#475a6e',700:'#2f3f50',800:'#1b2a3a',900:'#0f1c2b'},accent:'#2b7fd4'}}}}
+</script>
+<style>
+html{scroll-behavior:smooth}
+body{background:#fff;color:#0f1c2b}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#b4c4d6;border-radius:3px}
 
-    <style>
-        body { background:#ffffff; color:#0f172a; }
-        ::-webkit-scrollbar { width:5px; }
-        ::-webkit-scrollbar-track { background:#f8fafc; }
-        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
-        html { scroll-behavior:smooth; }
+/* TOP SECTION: image is shown at 100% width, auto height => never cropped, edge to edge.
+   Overlay keeps text readable and fades the image bottom into navy (no visible seam). */
+.top{
+  position:relative;
+  background:
+    linear-gradient(180deg,rgba(7,18,31,.62) 0,rgba(7,18,31,.55) calc(25vw*.6),#07121f 25vw),
+    url('Top%20Section%20Background.jpg') no-repeat top left/100% auto,
+    #07121f;
+}
+.top-text{text-shadow:0 2px 18px rgba(0,0,0,.45)}
+#nav{transition:background .3s,box-shadow .3s,backdrop-filter .3s}
+#nav.solid{background:rgba(7,18,31,.88);backdrop-filter:blur(14px);box-shadow:0 1px 0 rgba(180,196,214,.15)}
+.silver{background:linear-gradient(120deg,#fff 0%,#c9d8e8 45%,#8fb6e0 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.glass{background:rgba(255,255,255,.07);border:1px solid rgba(200,216,232,.22);backdrop-filter:blur(10px)}
 
-        .reveal {
-            opacity:0; transform:translateY(28px);
-            transition:opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
-        }
-        .reveal.active { opacity:1; transform:translateY(0); }
-        .reveal-delay-1{transition-delay:80ms} .reveal-delay-2{transition-delay:160ms}
-        .reveal-delay-3{transition-delay:240ms} .reveal-delay-4{transition-delay:320ms}
-        .reveal-delay-5{transition-delay:400ms} .reveal-delay-6{transition-delay:480ms}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+.reveal.active{opacity:1;transform:none}
+@keyframes hero-in{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+.hi{opacity:0;animation:hero-in .9s forwards cubic-bezier(.16,1,.3,1)}
+@keyframes marquee{to{transform:translateX(-50%)}}
+.marquee-track{animation:marquee 38s linear infinite}
+.marquee-mask{-webkit-mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent)}
 
-        @keyframes hero-in {
-            from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)}
-        }
-        .hero-item{opacity:0;animation:hero-in 0.9s forwards cubic-bezier(0.16,1,0.3,1)}
-        .hero-d1{animation-delay:0.15s} .hero-d2{animation-delay:0.3s}
-        .hero-d3{animation-delay:0.45s} .hero-d4{animation-delay:0.6s}
-
-        .gradient-text {
-            background:linear-gradient(135deg,#2563eb,#7c3aed,#2563eb);
-            background-size:200% auto;
-            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-            animation:grad-shift 6s ease infinite;
-        }
-        @keyframes grad-shift{0%,100%{background-position:0% center}50%{background-position:200% center}}
-
-        @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-        .marquee-track{animation:marquee 40s linear infinite}
-        .marquee-mask{
-            mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent);
-            -webkit-mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent);
-        }
-
-        .card {
-            background:#ffffff;
-            border:1px solid #e2e8f0;
-            border-radius:1rem;
-            transition:all 0.35s cubic-bezier(0.16,1,0.3,1);
-            position:relative;
-        }
-        .card:hover {
-            border-color:#cbd5e1;
-            box-shadow:0 20px 40px -12px rgba(0,0,0,0.08);
-            transform:translateY(-3px);
-        }
-
-        .exp-card {
-            background:#ffffff;
-            border:1px solid #e2e8f0;
-            border-radius:1.25rem;
-            transition:all 0.4s cubic-bezier(0.16,1,0.3,1);
-            position:relative;
-            overflow:hidden;
-        }
-        .exp-card:hover {
-            border-color:#bfdbfe;
-            box-shadow:0 24px 48px -12px rgba(37,99,235,0.08), 0 0 0 1px rgba(37,99,235,0.06);
-            transform:translateY(-4px);
-        }
-        .exp-card::after {
-            content:''; position:absolute; top:0; left:-100%; width:50%; height:100%;
-            background:linear-gradient(90deg,transparent,rgba(37,99,235,0.03),transparent);
-            transition:left 0.7s cubic-bezier(0.16,1,0.3,1); pointer-events:none;
-        }
-        .exp-card:hover::after { left:120%; }
-
-        .tag {
-            transition:all 0.2s ease;
-        }
-        .tag:hover {
-            background:#eff6ff; color:#2563eb; border-color:#bfdbfe;
-            transform:translateY(-1px);
-        }
-
-        .hover-image-reveal .image-overlay {
-            opacity:0; pointer-events:none;
-            transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1);
-        }
-        .hover-image-reveal:hover .image-overlay { opacity:1; }
-        .hover-image-reveal.show-image .image-overlay { opacity:1; pointer-events:auto; }
-
-        .logo-box {
-            border:1px solid #e2e8f0;
-            border-radius:0.75rem;
-            transition:all 0.3s;
-            overflow:hidden;
-        }
-        .exp-card:hover .logo-box { border-color:#bfdbfe; }
-        .logo-box img { transition:transform 0.4s cubic-bezier(0.16,1,0.3,1); }
-        .exp-card:hover .logo-box img { transform:scale(1.05); }
-
-        @keyframes float-subtle{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-        .float-subtle{animation:float-subtle 5s ease-in-out infinite}
-
-        .award-card {
-            background:#ffffff;
-            border:1px solid #e2e8f0;
-            border-radius:1.25rem;
-            transition:all 0.4s cubic-bezier(0.16,1,0.3,1);
-            position:relative; overflow:hidden;
-        }
-        .award-card:hover {
-            transform:translateY(-4px);
-            box-shadow:0 20px 40px -12px rgba(0,0,0,0.08);
-        }
-        .award-card.border-yellow:hover{border-color:#fbbf24;box-shadow:0 20px 40px -12px rgba(251,191,36,0.12)}
-        .award-card.border-amber:hover{border-color:#f59e0b;box-shadow:0 20px 40px -12px rgba(245,158,11,0.12)}
-        .award-card.border-blue:hover{border-color:#3b82f6;box-shadow:0 20px 40px -12px rgba(59,130,246,0.12)}
-        .award-card.border-red:hover{border-color:#ef4444;box-shadow:0 20px 40px -12px rgba(239,68,68,0.12)}
-        .award-card.border-gray:hover{border-color:#9ca3af;box-shadow:0 20px 40px -12px rgba(156,163,175,0.12)}
-        .award-card.border-purple:hover{border-color:#8b5cf6;box-shadow:0 20px 40px -12px rgba(139,92,246,0.12)}
-
-        .link-hover{position:relative}
-        .link-hover::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:1.5px;background:#0f172a;transition:width 0.25s}
-        .link-hover:hover::after{width:100%}
-
-        .section-divider {
-            height:1px;
-            background:linear-gradient(to right,transparent,#e2e8f0 20%,#e2e8f0 80%,transparent);
-        }
-    </style>
+.card{background:#fff;border:1px solid #e1e8f0;border-radius:1rem;transition:all .35s cubic-bezier(.16,1,.3,1)}
+.card:hover{border-color:#b9d3ee;box-shadow:0 22px 44px -14px rgba(27,42,58,.14);transform:translateY(-3px)}
+.tag{transition:all .2s}.tag:hover{background:#eaf3fc;color:#2b7fd4;border-color:#b9d3ee}
+.hover-image-reveal .image-overlay{opacity:0;pointer-events:none;transition:opacity .35s}
+.hover-image-reveal:hover .image-overlay,.hover-image-reveal.show-image .image-overlay{opacity:1}
+.hover-image-reveal.show-image .image-overlay{pointer-events:auto}
+.eyebrow{font:600 11px 'JetBrains Mono',monospace;letter-spacing:.25em;text-transform:uppercase;color:#2b7fd4}
+.timeline{position:relative}.timeline::before{content:'';position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:linear-gradient(#2b7fd4,#d3dee9)}
+.dot{position:absolute;left:4px;top:34px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #2b7fd4;box-shadow:0 0 0 5px rgba(43,127,212,.12)}
+.divider{height:1px;background:linear-gradient(to right,transparent,#d3dee9 20%,#d3dee9 80%,transparent)}
+@media(prefers-reduced-motion:reduce){.marquee-track,.hi{animation:none;opacity:1}.reveal{opacity:1;transform:none}}
+</style>
 </head>
 <body class="font-sans antialiased overflow-x-hidden">
 
-    <!-- Navbar -->
-    <nav class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-surface-3/60">
-        <div class="max-w-6xl mx-auto px-6 h-14 flex justify-between items-center">
-            <a href="#" class="font-mono text-base font-bold tracking-tight text-ink-0">
-                <span class="text-blue-600">&lt;</span>Rumi.Sufi<span class="text-blue-600">/&gt;</span>
-            </a>
-            <div class="hidden md:flex items-center gap-8 text-sm text-ink-4">
-                <a href="#experience" class="link-hover hover:text-ink-0 transition-colors">Experience</a>
-                <a href="#recognition" class="link-hover hover:text-ink-0 transition-colors">Recognition</a>
-                <a href="#publications" class="link-hover hover:text-ink-0 transition-colors">Publications</a>
-                <a href="#projects" class="link-hover hover:text-ink-0 transition-colors">Projects</a>
-                <a href="#contact" class="link-hover hover:text-ink-0 transition-colors">Contact</a>
-            </div>
-            <div class="hidden md:flex items-center gap-2.5">
-                <a href="https://github.com/sufirumii" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-ink-2 border border-surface-3 rounded-lg hover:bg-surface-1 transition-colors">
-                    <i data-lucide="github" class="w-4 h-4"></i> GitHub
-                </a>
-                <a href="https://huggingface.co/Rumiii" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-1.5 text-sm font-medium text-white bg-ink-0 rounded-lg hover:bg-ink-1 transition-colors">
-                    <i data-lucide="brain" class="w-4 h-4"></i> Hugging Face
-                </a>
-            </div>
-            <button id="mobile-menu-btn" class="md:hidden text-ink-3 hover:text-ink-0">
-                <i data-lucide="menu" class="w-5 h-5"></i>
-            </button>
+<div class="top text-white">
+  <nav id="nav" class="fixed top-0 w-full z-50">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex justify-between items-center">
+      <a href="#" class="font-mono text-base font-bold tracking-tight top-text"><span class="text-sky-300">&lt;</span>Rumi.Sufi<span class="text-sky-300">/&gt;</span></a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-steel-100 top-text">
+        <a href="#focus" class="hover:text-white transition-colors">Focus</a>
+        <a href="#experience" class="hover:text-white transition-colors">Experience</a>
+        <a href="#recognition" class="hover:text-white transition-colors">Recognition</a>
+        <a href="#research" class="hover:text-white transition-colors">Research</a>
+        <a href="#projects" class="hover:text-white transition-colors">Project</a>
+        <a href="#contact" class="hover:text-white transition-colors">Contact</a>
+      </div>
+      <div class="hidden md:flex items-center gap-2.5">
+        <a href="https://github.com/sufirumii" target="_blank" rel="noopener" class="glass flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg hover:bg-white/15 transition-colors"><i data-lucide="github" class="w-4 h-4"></i>GitHub</a>
+        <a href="https://huggingface.co/Rumiii" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-1.5 text-sm font-semibold text-navy bg-white rounded-lg hover:bg-steel-100 transition-colors"><i data-lucide="brain" class="w-4 h-4"></i>Hugging Face</a>
+      </div>
+      <button id="mbtn" aria-label="Menu" class="md:hidden"><i data-lucide="menu" class="w-6 h-6"></i></button>
+    </div>
+    <div id="mmenu" class="hidden md:hidden bg-navy/95 backdrop-blur px-6 py-5 space-y-4 border-t border-white/10">
+      <a href="#focus" class="block">Focus</a><a href="#experience" class="block">Experience</a><a href="#recognition" class="block">Recognition</a>
+      <a href="#research" class="block">Research</a><a href="#projects" class="block">Project</a><a href="#contact" class="block">Contact</a>
+    </div>
+  </nav>
+
+  <header class="pt-32 pb-16 md:pt-44 md:pb-24 px-6">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="hi eyebrow !text-sky-200 mb-6 top-text" style="animation-delay:.1s">Applied AI · Life Sciences · Agentic Systems</p>
+      <h1 class="hi text-5xl sm:text-7xl md:text-8xl font-extrabold leading-[.95] tracking-[-.04em] mb-6 top-text" style="animation-delay:.2s">Rumi Iqbal <span class="silver">Sufi</span></h1>
+      <p class="hi text-xl md:text-3xl font-semibold text-steel-100 tracking-tight mb-5 top-text" style="animation-delay:.3s">Forward Deployed AI Engineer</p>
+      <p class="hi font-serif italic text-lg md:text-xl text-steel-200 max-w-2xl mx-auto mb-10 top-text" style="animation-delay:.4s">Turning frontier models into reliable, deployable systems for drug discovery and healthcare.</p>
+      <div class="hi w-full max-w-2xl mx-auto mb-10 marquee-mask" style="animation-delay:.5s">
+        <div id="marquee" class="marquee-track flex gap-2.5 w-max"></div>
+      </div>
+      <div class="hi flex flex-col sm:flex-row gap-3 justify-center" style="animation-delay:.6s">
+        <a href="#experience" class="inline-flex items-center justify-center gap-2 px-7 py-3 bg-white text-navy text-sm font-semibold rounded-lg hover:bg-steel-100 transition-colors">View Experience <i data-lucide="arrow-down" class="w-4 h-4"></i></a>
+        <a href="mailto:sufirumii@gmail.com" class="glass inline-flex items-center justify-center gap-2 px-7 py-3 text-sm font-medium rounded-lg hover:bg-white/15 transition-colors"><i data-lucide="mail" class="w-4 h-4"></i>Contact Me</a>
+      </div>
+      <div class="hi grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto mt-16" style="animation-delay:.75s">
+        <div class="glass rounded-xl py-5"><p class="text-3xl font-extrabold">7</p><p class="text-xs text-steel-200 mt-1">AI courses led at Excelra</p></div>
+        <div class="glass rounded-xl py-5"><p class="text-3xl font-extrabold">6</p><p class="text-xs text-steel-200 mt-1">International awards</p></div>
+        <div class="glass rounded-xl py-5"><p class="text-3xl font-extrabold">14.5B</p><p class="text-xs text-steel-200 mt-1">Token RAG knowledge base</p></div>
+        <div class="glass rounded-xl py-5"><p class="text-3xl font-extrabold">14</p><p class="text-xs text-steel-200 mt-1">Diagnostic classifiers</p></div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<!-- Focus -->
+<section id="focus" class="py-20 md:py-28 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="reveal mb-12 text-center"><p class="eyebrow mb-3">What I Do</p><h2 class="text-3xl md:text-5xl font-bold tracking-tight">Core Focus Areas</h2></div>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="reveal card p-7"><div class="w-12 h-12 rounded-xl bg-steel-100 flex items-center justify-center mb-5"><i data-lucide="bot" class="w-6 h-6 text-accent"></i></div><h3 class="font-bold text-lg mb-2">Agentic AI &amp; Tool Use</h3><p class="text-steel-500 text-[15px] leading-relaxed">Designing LLM agents that call scientific databases and APIs to complete multi-step research workflows.</p></div>
+      <div class="reveal card p-7" style="transition-delay:.08s"><div class="w-12 h-12 rounded-xl bg-steel-100 flex items-center justify-center mb-5"><i data-lucide="cpu" class="w-6 h-6 text-accent"></i></div><h3 class="font-bold text-lg mb-2">LLM Fine-Tuning</h3><p class="text-steel-500 text-[15px] leading-relaxed">LoRA / QLoRA and continued pre-training of open models on medical and biomedical data.</p></div>
+      <div class="reveal card p-7" style="transition-delay:.16s"><div class="w-12 h-12 rounded-xl bg-steel-100 flex items-center justify-center mb-5"><i data-lucide="database" class="w-6 h-6 text-accent"></i></div><h3 class="font-bold text-lg mb-2">Retrieval &amp; Clinical AI</h3><p class="text-steel-500 text-[15px] leading-relaxed">Retrieval-grounded systems and computer vision diagnostics that reduce hallucination and stay traceable.</p></div>
+    </div>
+  </div>
+</section>
+<div class="divider max-w-6xl mx-auto"></div>
+
+<!-- Experience -->
+<section id="experience" class="py-20 md:py-28 px-6 bg-steel-50">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal mb-14"><p class="eyebrow mb-3">Career</p><h2 class="text-3xl md:text-5xl font-bold tracking-tight">Work Experience</h2></div>
+    <div class="timeline flex flex-col gap-6 pl-10 md:pl-12" id="exp"></div>
+  </div>
+</section>
+
+<!-- Recognition -->
+<section id="recognition" class="py-20 md:py-28 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="reveal mb-14 text-center"><p class="eyebrow mb-3">Recognition</p><h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-3">International Awards</h2><p class="text-steel-400 text-[15px]">Hover (or tap on mobile) to reveal the official certificates.</p></div>
+    <div id="awards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"></div>
+  </div>
+</section>
+
+<!-- Research -->
+<section id="research" class="py-20 md:py-28 px-6 bg-steel-50">
+  <div class="max-w-5xl mx-auto">
+    <div class="reveal mb-12 text-center"><p class="eyebrow mb-3">Research</p><h2 class="text-3xl md:text-5xl font-bold tracking-tight">Research &amp; Open Models</h2></div>
+    <div class="reveal card p-8 text-center max-w-3xl mx-auto">
+      <i data-lucide="flask-conical" class="w-10 h-10 text-accent mx-auto mb-4"></i>
+      <h3 class="text-lg font-semibold mb-2">Publications in progress</h3>
+      <p class="text-steel-500 text-[15px] leading-relaxed mb-5">Ongoing work on medical LLM fine-tuning, dataset formatting effects on reasoning, and retrieval-based alternatives to large-scale pretraining. Models and code are shared openly.</p>
+      <div class="flex flex-wrap justify-center gap-2 mb-6">
+        <span class="tag px-3 py-1 bg-steel-50 border border-steel-200 rounded-lg text-xs text-steel-500 font-mono">Medical Reasoning</span>
+        <span class="tag px-3 py-1 bg-steel-50 border border-steel-200 rounded-lg text-xs text-steel-500 font-mono">Tool Calling</span>
+        <span class="tag px-3 py-1 bg-steel-50 border border-steel-200 rounded-lg text-xs text-steel-500 font-mono">Constraint-Aware RAG</span>
+      </div>
+      <a href="https://huggingface.co/Rumiii" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:underline">Browse models on Hugging Face <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- Project -->
+<section id="projects" class="py-20 md:py-28 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="reveal mb-14 text-center">
+      <p class="eyebrow mb-3">Featured Project</p>
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-4">Final Year Project Recognition</h2>
+      <p class="font-serif italic text-2xl md:text-3xl text-steel-600 mb-6">The project that started my career</p>
+      <p class="text-steel-500 text-[15px] max-w-3xl mx-auto leading-relaxed">Aetherion VZ Alpha 400B (SentiVita) — A full-stack, AI-driven clinical decision support interface fusing computer vision diagnostics, a retrieval-grounded medical assistant, and biometric patient identity verification.</p>
+    </div>
+    <div id="shots" class="reveal grid grid-cols-1 md:grid-cols-2 gap-4 mb-10"></div>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="reveal md:col-span-2 card p-7">
+        <h3 class="text-xl font-bold mb-5">System Architecture</h3>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="p-4 bg-steel-50 rounded-xl border border-steel-100"><i data-lucide="brain" class="w-6 h-6 text-violet-600 mb-2.5"></i><h4 class="font-semibold text-sm mb-1">LLM Reasoning Layer</h4><p class="text-steel-500 text-[13px] leading-relaxed">Llama 4 Maverick (400B MoE). 17B active parameters per token, 128 routed experts, early-fusion multimodality.</p></div>
+          <div class="p-4 bg-steel-50 rounded-xl border border-steel-100"><i data-lucide="scan-eye" class="w-6 h-6 text-cyan-600 mb-2.5"></i><h4 class="font-semibold text-sm mb-1">14 ResNet50 Classifiers</h4><p class="text-steel-500 text-[13px] leading-relaxed">Fine-tuned diagnostic models: Diabetic Retinopathy, Brain Tumors, Alzheimer's, Breast Cancer, etc.</p></div>
+          <div class="p-4 bg-steel-50 rounded-xl border border-steel-100"><i data-lucide="database" class="w-6 h-6 text-blue-600 mb-2.5"></i><h4 class="font-semibold text-sm mb-1">Naive RAG Pipeline</h4><p class="text-steel-500 text-[13px] leading-relaxed">PubMed, BioASQ, ChatDoctor corpus. Embedded via all-MiniLM-L6-v2 with cosine similarity retrieval.</p></div>
+          <div class="p-4 bg-steel-50 rounded-xl border border-steel-100"><i data-lucide="fingerprint" class="w-6 h-6 text-emerald-600 mb-2.5"></i><h4 class="font-semibold text-sm mb-1">Biometric Verification</h4><p class="text-steel-500 text-[13px] leading-relaxed">OpenCV Haar cascades &amp; face_recognition for role-based live webcam identity verification.</p></div>
         </div>
-        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-surface-3 px-6 py-5 space-y-4">
-            <a href="#experience" class="block text-base text-ink-2 hover:text-ink-0">Experience</a>
-            <a href="#recognition" class="block text-base text-ink-2 hover:text-ink-0">Recognition</a>
-            <a href="#publications" class="block text-base text-ink-2 hover:text-ink-0">Publications</a>
-            <a href="#projects" class="block text-base text-ink-2 hover:text-ink-0">Projects</a>
-            <a href="#contact" class="block text-base text-ink-2 hover:text-ink-0">Contact</a>
-            <div class="flex gap-2 pt-3 border-t border-surface-3">
-                <a href="https://github.com/sufirumii" target="_blank" rel="noopener" class="flex-1 text-center px-3 py-2 text-sm font-medium border border-surface-3 rounded-lg">GitHub</a>
-                <a href="https://huggingface.co/Rumiii" target="_blank" rel="noopener" class="flex-1 text-center px-3 py-2 text-sm font-medium bg-ink-0 text-white rounded-lg">Hugging Face</a>
-            </div>
-        </div>
-    </nav>
+      </div>
+      <div class="reveal card p-7 flex flex-col justify-between" style="transition-delay:.08s">
+        <div><div class="flex items-center gap-2.5 mb-3"><i data-lucide="landmark" class="w-6 h-6 text-amber-600"></i><h3 class="font-bold">Government Recognition</h3></div>
+        <p class="text-steel-500 text-[15px] leading-relaxed mb-5">Live demonstration to Malaysia's Deputy Minister of Health, coinciding with APU being named an official consultant to the Ministry of Health's Health Performance Unit.</p></div>
+        <a href="https://github.com/sufirumii/Final-Year-Project-Aetherion-VZ-Alpha-400B-" target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-sm font-semibold text-accent hover:underline">View Repository <i data-lucide="arrow-up-right" class="w-4 h-4"></i></a>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- Hero -->
-    <header class="pt-28 pb-20 md:pt-40 md:pb-28 px-6">
-        <div class="max-w-6xl mx-auto text-center">
-            <h1 class="hero-item hero-d1 text-5xl sm:text-7xl md:text-8xl font-extrabold leading-[0.9] tracking-[-0.04em] text-ink-0 mb-8">
-                Rumi Iqbal<br><span class="gradient-text">Sufi</span>
-            </h1>
-            <p class="hero-item hero-d2 text-2xl md:text-3xl font-semibold text-ink-2 tracking-tight mb-10">
-                Forward Deployed AI Engineer 
-            </p>
-            <div class="hero-item hero-d3 w-full max-w-2xl mx-auto mb-12 marquee-mask">
-                <div class="marquee-track flex gap-2.5 w-max">
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Python</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">PyTorch</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Transformers</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">LoRA / QLoRA</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Continued Pre-Training</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">RAG</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Computer Vision</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">ResNet50</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Python</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">PyTorch</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Transformers</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">LoRA / QLoRA</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Continued Pre-Training</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">RAG</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">Computer Vision</span>
-                    <span class="px-3.5 py-1.5 bg-surface-1 border border-surface-3 rounded-lg text-sm text-ink-4 font-mono">ResNet50</span>
-                </div>
-            </div>
-            <div class="hero-item hero-d4 flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="#experience" class="inline-flex items-center justify-center gap-2 px-7 py-3 bg-ink-0 text-white text-sm font-semibold rounded-lg hover:bg-ink-1 transition-colors">
-                    View Experience
-                    <i data-lucide="arrow-down" class="w-4 h-4"></i>
-                </a>
-                <a href="https://github.com/sufirumii" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 px-7 py-3 bg-white text-ink-2 text-sm font-medium rounded-lg border border-surface-3 hover:bg-surface-1 transition-colors">
-                    <i data-lucide="github" class="w-4 h-4"></i> GitHub
-                </a>
-            </div>
-        </div>
-    </header>
+<!-- Contact -->
+<footer id="contact" class="text-white py-20 md:py-28 px-6" style="background:linear-gradient(180deg,#0f1c2b,#07121f)">
+  <div class="max-w-5xl mx-auto text-center reveal">
+    <p class="eyebrow !text-sky-300 mb-4">Contact</p>
+    <h2 class="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">Let's build something <span class="silver">meaningful</span></h2>
+    <p class="text-steel-300 mb-10">Open to conversations about applied AI in life sciences and healthcare.</p>
+    <a href="mailto:sufirumii@gmail.com" class="inline-flex items-center gap-3 px-8 py-4 bg-white text-navy font-semibold rounded-lg hover:bg-steel-100 transition-colors"><i data-lucide="mail" class="w-5 h-5"></i>sufirumii@gmail.com</a>
+    <div class="flex justify-center gap-8 mt-14 text-steel-300 text-sm">
+      <a href="https://github.com/sufirumii" target="_blank" rel="noopener" class="hover:text-white flex items-center gap-1.5"><i data-lucide="github" class="w-4 h-4"></i>GitHub</a>
+      <a href="https://huggingface.co/Rumiii" target="_blank" rel="noopener" class="hover:text-white flex items-center gap-1.5"><i data-lucide="brain" class="w-4 h-4"></i>Hugging Face</a>
+      <a href="https://www.linkedin.com" target="_blank" rel="noopener" class="hover:text-white flex items-center gap-1.5"><i data-lucide="linkedin" class="w-4 h-4"></i>LinkedIn</a>
+    </div>
+    <p class="mt-10 text-xs text-steel-400 font-mono tracking-wider">Srinagar, India • UTC +5:30</p>
+  </div>
+</footer>
 
-    <div class="section-divider max-w-6xl mx-auto"></div>
+<script>
+const $=id=>document.getElementById(id);
+const tags=['Python','PyTorch','Transformers','LoRA / QLoRA','Continued Pre-Training','RAG','AI Agents','Tool Calling','Computer Vision','ResNet50'];
+$('marquee').innerHTML=[...tags,...tags].map(t=>`<span class="glass px-3.5 py-1.5 rounded-lg text-sm text-steel-100 font-mono">${t}</span>`).join('');
 
-    <!-- Experience -->
-    <section id="experience" class="py-20 md:py-28 px-6 bg-surface-1">
-        <div class="max-w-5xl mx-auto">
-            <div class="reveal mb-14">
-                <p class="text-xs font-mono uppercase tracking-[0.25em] text-blue-600 mb-3">Career</p>
-                <h2 class="text-3xl md:text-5xl font-bold tracking-tight text-ink-0">Work Experience</h2>
-            </div>
+const tg=a=>a.map(t=>`<span class="tag px-3 py-1 bg-steel-50 border border-steel-200 rounded-lg text-xs text-steel-500 font-mono">${t}</span>`).join('');
+const jobs=[
+{logo:'Excelra.jpg',role:'Forward Deployed AI Engineer',org:'Excelra',date:'May 2026 — Present',loc:'Hyderabad, Telangana',badge:'',
+ pts:['Lead a team for integrating and deploying 7 AI Powered Courses on Life Sciences for employee training','Built a MultiOmics and Drug Repurposing AI Agent with Qwen9B'],
+ tags:['AI Agents','Qwen','Multi-Omics','Drug Repurposing','Life Sciences','Team Leadership']},
+{logo:'APU%20Logo.webp',role:'Applied AI Engineer',org:'Asia Pacific University (APU)',date:'December 2024 — August 2025',loc:'Kuala Lumpur, Malaysia',badge:'Final Year Project',
+ pts:['Led development of MediGuardAI Rover, an autonomous mobile healthcare security system with patrol, emergency intervention, and LLM-assisted medical support capabilities','Architected the reasoning layer on LLaMA 4 Maverick, backed by a 14.5B-token RAG database and 14 fine-tuned ResNet-50 diagnostic classifiers for medical imaging','Built additional platform features including 10 interactive visualizations, a cognitive rehabilitation game, ASMR therapy, and an emergency support module','Development was supported by a sponsored NVIDIA RTX 4090 GPU; the project went on to win 6 international awards (see Recognition)'],
+ tags:['Large Language Models (LLM)','Retrieval-Augmented Generation (RAG)','Convolutional Neural Networks (CNN)','Agentic AI Development']},
+{logo:'Asrix%20Prime%20Berhad.jpeg',role:'AI Engineer',org:'Asrix Prime Berhad',date:'May 2024 — October 2024',loc:'Subang Jaya, Selangor',badge:'Internship',
+ pts:['Built a Multi-Modal Face and Voice Authentication system with Gaussian Mixture Model and Deep Learning (CNN), achieving 75% accuracy','Optimised PorteusOS for deployment by cutting boot time by 15 seconds and UI modification','Supervised fine-tuning of Small Language Models on medical datasets and integrated Retrieval-Augmented Generation to reduce hallucinations'],
+ tags:['Biometrics','CNN','SLM Fine-Tuning','RAG']}];
+$('exp').innerHTML=jobs.map((j,i)=>`<div class="reveal relative" style="transition-delay:${i*80}ms"><span class="dot"></span>
+<div class="card p-7 md:p-9"><div class="flex gap-5 mb-5"><div class="shrink-0 w-16 h-16 md:w-20 md:h-20 border border-steel-200 rounded-xl bg-white p-2.5 flex items-center justify-center"><img src="${j.logo}" alt="${j.org}" class="w-full h-full object-contain rounded"></div>
+<div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-1.5">${j.badge?`<span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-blue-100">${j.badge}</span>`:''}<span class="text-sm text-steel-400 font-mono">${j.date}</span></div>
+<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.role}</h3><p class="text-accent font-semibold">${j.org}</p>
+<p class="flex items-center gap-1 text-sm text-steel-500 mt-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-accent"></i>${j.loc}</p></div></div>
+<ul class="space-y-2.5 list-disc list-outside ml-5 text-steel-600 text-[15px] leading-relaxed mb-5">${j.pts.map(p=>`<li>${p}</li>`).join('')}</ul><div class="flex flex-wrap gap-2">${tg(j.tags)}</div></div></div>`).join('');
 
-            <div class="flex flex-col gap-5">
-                <!-- Excelra -->
-                <div class="reveal reveal-delay-1 exp-card p-7 md:p-9">
-                    <div class="flex flex-col sm:flex-row gap-6 mb-6">
-                        <div class="shrink-0">
-                            <div class="logo-box w-16 h-16 md:w-20 md:h-20 flex items-center justify-center p-2.5 bg-white float-subtle">
-                                <img src="https://raw.githubusercontent.com/sufirumii/Portfolio/main/Excelra.jpg" alt="Excelra" class="w-full h-full object-contain rounded">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 class="text-xl md:text-2xl font-bold tracking-tight text-ink-0 mb-0.5">Forward Deployed AI Engineer </h3>
-                            <p class="text-blue-600 text-base font-semibold mb-2">Excelra</p>
-                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <span class="text-sm text-ink-5 font-mono">May 2026 — Present</span>
-                                <span class="hidden sm:inline text-surface-3">•</span>
-                                <span class="flex items-center gap-1 text-sm text-ink-4">
-                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500"></i>
-                                    Hyderabad, Telangana
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <ul class="space-y-2.5 list-disc list-inside text-ink-3 text-[15px] leading-relaxed mb-5">
-                        <li>Lead a team for integrating and deploying 7 AI Powered Courses on Life Sciences for employee training</li>
-                    </ul>
-                </div>
+const aw=[['iCAN 2025','Gold Medal',"Int'l Invention Competition • Toronto",'MediGuard AI Rover','trophy','yellow','39aeda1f-79ff-493a-80bd-f8b550d37b9c'],
+['iCAN 2025','Top 10 Best Invention',"Int'l Invention Competition • Toronto",'MediGuard AI Rover','star','amber','936f1fbf-eba3-4e89-8281-d11d3b017aae'],
+['iCAN 2025','OFEED Special Award','Organization of the European Inventors','MediGuard AI Rover','award','blue','4a88e892-69b9-4c08-9ce6-5809e66fa852'],
+['iCAN 2025','Croatian Inventors Network','Special Award (HUM)','MediGuard AI Rover','award','red','bb85a8f9-3429-4879-8ecd-ca070fbf1675'],
+['IBIEC 2025','Silver Medal',"Int'l Business & Innovation Exhibition",'SentiVita RS:1','medal','gray','54a0727f-0e94-450a-8c7c-f0c02ea5c0f2'],
+['University','Second Prize · Final Year Project','University Project Competition','SentiVita RS:1 Max Fusion','graduation-cap','violet','302ed9db-cda4-4afa-b88e-0df51e0c3c8a']];
+$('awards').innerHTML=aw.map((a,i)=>`<div class="reveal card hover-image-reveal relative overflow-hidden p-7 text-center flex flex-col" style="transition-delay:${i*70}ms">
+<div class="flex flex-col h-full"><div class="mb-4"><span class="px-2.5 py-0.5 bg-${a[5]}-50 text-${a[5]}-700 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-${a[5]}-200">${a[0]}</span></div>
+<div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-${a[5]}-50 border border-${a[5]}-100 flex items-center justify-center"><i data-lucide="${a[4]}" class="w-7 h-7 text-${a[5]}-600"></i></div>
+<h3 class="text-xl font-bold mb-1.5">${a[1]}</h3><p class="text-steel-400 text-sm">${a[2]}</p><div class="mt-auto pt-5 border-t border-steel-100"><p class="text-steel-600 text-sm font-mono">${a[3]}</p></div></div>
+<div class="image-overlay absolute inset-0 bg-white/95 z-20 flex items-center justify-center p-5"><img src="https://github.com/user-attachments/assets/${a[6]}" alt="${a[1]} certificate" loading="lazy" class="max-w-full max-h-full object-contain rounded-lg shadow-lg"></div></div>`).join('');
 
-                <!-- APU Final Year Project -->
-                <div class="reveal reveal-delay-2 exp-card p-7 md:p-9">
-                    <div class="flex flex-col sm:flex-row gap-6 mb-6">
-                        <div class="shrink-0">
-                            <div class="logo-box w-16 h-16 md:w-20 md:h-20 flex items-center justify-center p-2.5 bg-white float-subtle">
-                                <img src="https://raw.githubusercontent.com/sufirumii/Portfolio/main/APU%20Logo.webp" alt="Asia Pacific University" class="w-full h-full object-contain rounded">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                                <span class="px-2.5 py-0.5 bg-violet-50 text-violet-600 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-violet-100">Final Year Project</span>
-                                <span class="text-sm text-ink-5 font-mono">December 2024 — August 2025</span>
-                            </div>
-                            <h3 class="text-xl md:text-2xl font-bold tracking-tight text-ink-0 mb-0.5">Applied AI Engineer</h3>
-                            <p class="text-blue-600 text-base font-semibold mb-2">Asia Pacific University (APU)</p>
-                            <div class="flex items-center gap-1 text-sm text-ink-4">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500"></i>
-                                Federal Territory of Kuala Lumpur, Malaysia
-                            </div>
-                        </div>
-                    </div>
+$('shots').innerHTML=['ca8724e4-6c3c-424f-bb86-a585e0e1349a','ad67296b-e4de-4e81-962b-703ecfb0d4ca','70d5d785-7532-492b-b97e-47d4e8accbb1','dc6298cd-e0cb-409e-b954-28ffe0002f8f'].map(s=>`<div class="h-64 sm:h-80 md:h-96 bg-steel-50 border border-steel-200 rounded-xl flex items-center justify-center p-5 hover:border-blue-300 transition-colors"><img src="https://github.com/user-attachments/assets/${s}" alt="Project screenshot" loading="lazy" class="max-w-full max-h-full object-contain rounded-lg"></div>`).join('');
 
-                    <ul class="space-y-2.5 list-disc list-inside text-ink-3 text-[15px] leading-relaxed mb-5">
-                        <li>Led development of MediGuardAI Rover, an autonomous mobile healthcare security system with patrol, emergency intervention, and LLM-assisted medical support capabilities</li>
-                        <li>Architected the reasoning layer on LLaMA 4 Maverick, backed by a 14.5B-token RAG database and 14 fine-tuned ResNet-50 diagnostic classifiers for medical imaging</li>
-                        <li>Built additional platform features including 10 interactive visualizations, a cognitive rehabilitation game, ASMR therapy, and an emergency support module</li>
-                        <li>Development was supported by a sponsored NVIDIA RTX 4090 GPU; the project went on to win 6 international awards (see Recognition)</li>
-                    </ul>
-
-                    <div class="flex flex-wrap gap-2">
-                        <span class="tag px-3 py-1 bg-surface-1 border border-surface-3 rounded-lg text-xs text-ink-4 font-mono">Large Language Models (LLM)</span>
-                        <span class="tag px-3 py-1 bg-surface-1 border border-surface-3 rounded-lg text-xs text-ink-4 font-mono">Retrieval-Augmented Generation (RAG)</span>
-                        <span class="tag px-3 py-1 bg-surface-1 border border-surface-3 rounded-lg text-xs text-ink-4 font-mono">Convolutional Neural Networks (CNN)</span>
-                        <span class="tag px-3 py-1 bg-surface-1 border border-surface-3 rounded-lg text-xs text-ink-4 font-mono">Agentic AI Development</span>
-                    </div>
-                </div>
-
-                <!-- Asrix -->
-                <div class="reveal reveal-delay-3 exp-card p-7 md:p-9">
-                    <div class="flex flex-col sm:flex-row gap-6 mb-6">
-                        <div class="shrink-0">
-                            <div class="logo-box w-16 h-16 md:w-20 md:h-20 flex items-center justify-center p-2.5 bg-white">
-                                <img src="https://raw.githubusercontent.com/sufirumii/Portfolio/main/Asrix%20Prime%20Berhad.jpeg" alt="Asrix Prime Berhad" class="w-full h-full object-contain rounded">
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex flex-wrap items-center gap-2 mb-1.5">
-                                <span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-blue-100">Internship</span>
-                                <span class="text-sm text-ink-5 font-mono">May 2024 — October 2024</span>
-                            </div>
-                            <h3 class="text-xl md:text-2xl font-bold tracking-tight text-ink-0 mb-0.5">AI Engineer</h3>
-                            <p class="text-blue-600 text-base font-semibold mb-2">Asrix Prime Berhad</p>
-                            <div class="flex items-center gap-1 text-sm text-ink-4">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-500"></i>
-                                Empire Tower, Subang Jaya, Selangor
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <ul class="space-y-2.5 list-disc list-inside text-ink-3 text-[15px] leading-relaxed">
-                        <li>Built a Multi-Modal Face and Voice Authentication system with Gaussian Mixture Model and Deep Learning (CNN), achieving 75% accuracy</li>
-                        <li>Optimised PorteusOS for deployment by cutting boot time by 15 seconds and UI modification</li>
-                        <li>Supervised fine-tuning of Small Language Models on medical datasets and integrated Retrieval-Augmented Generation to reduce hallucinations</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Recognition -->
-    <section id="recognition" class="py-20 md:py-28 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="reveal mb-14 text-center">
-                <p class="text-xs font-mono uppercase tracking-[0.25em] text-violet-600 mb-3">Recognition</p>
-                <h2 class="text-3xl md:text-5xl font-bold tracking-tight text-ink-0 mb-3">International Awards</h2>
-                <p class="text-ink-5 text-[15px] max-w-lg mx-auto">Hover (or tap on mobile) to reveal the official certificates.</p>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-
-                <div class="reveal reveal-delay-1 award-card border-yellow p-7 text-center flex flex-col hover-image-reveal relative overflow-hidden">
-                    <div class="relative z-0 flex flex-col h-full">
-                        <div class="mb-4"><span class="px-2.5 py-0.5 bg-yellow-50 text-yellow-700 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-yellow-200">iCAN 2025</span></div>
-                        <div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-yellow-50 border border-yellow-100 flex items-center justify-center">
-                            <i data-lucide="trophy" class="w-7 h-7 text-yellow-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-ink-0 mb-1.5 tracking-tight">Gold Medal</h3>
-                        <p class="text-ink-5 text-sm">Int'l Invention Competition • Toronto</p>
-                        <div class="mt-auto pt-5 border-t border-surface-3"><p class="text-ink-3 text-sm font-mono">MediGuard AI Rover</p></div>
-                    </div>
-                    <div class="image-overlay absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-5 rounded-[1.25rem]">
-                        <img src="https://github.com/user-attachments/assets/39aeda1f-79ff-493a-80bd-f8b550d37b9c" alt="iCAN Gold" class="max-w-full max-h-full object-contain rounded-lg shadow-lg">
-                    </div>
-                </div>
-
-                <div class="reveal reveal-delay-2 award-card border-amber p-7 text-center flex flex-col hover-image-reveal relative overflow-hidden">
-                    <div class="relative z-0 flex flex-col h-full">
-                        <div class="mb-4"><span class="px-2.5 py-0.5 bg-amber-50 text-amber-700 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-amber-200">iCAN 2025</span></div>
-                        <div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
-                            <i data-lucide="star" class="w-7 h-7 text-amber-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-ink-0 mb-1.5 tracking-tight">Top 10 Best Invention</h3>
-                        <p class="text-ink-5 text-sm">Int'l Invention Competition • Toronto</p>
-                        <div class="mt-auto pt-5 border-t border-surface-3"><p class="text-ink-3 text-sm font-mono">MediGuard AI Rover</p></div>
-                    </div>
-                    <div class="image-overlay absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-5 rounded-[1.25rem]">
-                        <img src="https://github.com/user-attachments/assets/936f1fbf-eba3-4e89-8281-d11d3b017aae" alt="iCAN Top 10" class="max-w-full max-h-full object-contain rounded-lg shadow-lg">
-                    </div>
-                </div>
-
-                <div class="reveal reveal-delay-3 award-card border-blue p-7 text-center flex flex-col hover-image-reveal relative overflow-hidden">
-                    <div class="relative z-0 flex flex-col h-full">
-                        <div class="mb-4"><span class="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-blue-200">iCAN 2025</span></div>
-                        <div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
-                            <i data-lucide="award" class="w-7 h-7 text-blue-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-ink-0 mb-1.5 tracking-tight">OFEED Special Award</h3>
-                        <p class="text-ink-5 text-sm">Organization of the European Inventors</p>
-                        <div class="mt-auto pt-5 border-t border-surface-3"><p class="text-ink-3 text-sm font-mono">MediGuard AI Rover</p></div>
-                    </div>
-                    <div class="image-overlay absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-5 rounded-[1.25rem]">
-                        <img src="https://github.com/user-attachments/assets/4a88e892-69b9-4c08-9ce6-5809e66fa852" alt="OFEED" class="max-w-full max-h-full object-contain rounded-lg shadow-lg">
-                    </div>
-                </div>
-
-                <div class="reveal reveal-delay-4 award-card border-red p-7 text-center flex flex-col hover-image-reveal relative overflow-hidden">
-                    <div class="relative z-0 flex flex-col h-full">
-                        <div class="mb-4"><span class="px-2.5 py-0.5 bg-red-50 text-red-700 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-red-200">iCAN 2025</span></div>
-                        <div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center">
-                            <i data-lucide="award" class="w-7 h-7 text-red-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-ink-0 mb-1.5 tracking-tight">Croatian Inventors Network</h3>
-                        <p class="text-ink-5 text-sm">Special Award (HUM)</p>
-                        <div class="mt-auto pt-5 border-t border-surface-3"><p class="text-ink-3 text-sm font-mono">MediGuard AI Rover</p></div>
-                    </div>
-                    <div class="image-overlay absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-5 rounded-[1.25rem]">
-                        <img src="https://github.com/user-attachments/assets/bb85a8f9-3429-4879-8ecd-ca070fbf1675" alt="Croatian" class="max-w-full max-h-full object-contain rounded-lg shadow-lg">
-                    </div>
-                </div>
-
-                <div class="reveal reveal-delay-5 award-card border-gray p-7 text-center flex flex-col hover-image-reveal relative overflow-hidden">
-                    <div class="relative z-0 flex flex-col h-full">
-                        <div class="mb-4 h-5"></div>
-                        <div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center">
-                            <i data-lucide="medal" class="w-7 h-7 text-gray-500"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-ink-0 mb-1.5 tracking-tight">IBIEC 2025</h3>
-                        <p class="text-ink-2 text-base font-semibold">Silver Medal</p>
-                        <p class="text-ink-5 text-sm">Int'l Business & Innovation Exhibition</p>
-                        <div class="mt-auto pt-5 border-t border-surface-3"><p class="text-ink-3 text-sm font-mono">SentiVita RS:1</p></div>
-                    </div>
-                    <div class="image-overlay absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-5 rounded-[1.25rem]">
-                        <img src="https://github.com/user-attachments/assets/54a0727f-0e94-450a-8c7c-f0c02ea5c0f2" alt="IBIEC" class="max-w-full max-h-full object-contain rounded-lg shadow-lg">
-                    </div>
-                </div>
-
-                <div class="reveal reveal-delay-6 award-card border-purple p-7 text-center flex flex-col hover-image-reveal relative overflow-hidden">
-                    <div class="relative z-0 flex flex-col h-full">
-                        <div class="mb-4 h-5"></div>
-                        <div class="mx-auto mb-5 w-14 h-14 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
-                            <i data-lucide="graduation-cap" class="w-7 h-7 text-violet-600"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-ink-0 mb-1.5 tracking-tight">University Second Prize</h3>
-                        <p class="text-violet-700 text-base font-semibold">Final Year Project</p>
-                        <p class="text-ink-5 text-sm">University Project Competition</p>
-                        <div class="mt-auto pt-5 border-t border-surface-3"><p class="text-ink-3 text-sm font-mono">SentiVita RS:1 Max Fusion</p></div>
-                    </div>
-                    <div class="image-overlay absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex items-center justify-center p-5 rounded-[1.25rem]">
-                        <img src="https://github.com/user-attachments/assets/302ed9db-cda4-4afa-b88e-0df51e0c3c8a" alt="University" class="max-w-full max-h-full object-contain rounded-lg shadow-lg">
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- Publications -->
-    <section id="publications" class="py-20 md:py-28 px-6 bg-surface-1">
-        <div class="max-w-5xl mx-auto">
-            <div class="reveal mb-14 text-center">
-                <p class="text-xs font-mono uppercase tracking-[0.25em] text-emerald-600 mb-3">Research</p>
-                <h2 class="text-3xl md:text-5xl font-bold tracking-tight text-ink-0">Publications</h2>
-            </div>
-            
-            <!-- Placeholder for Publications -->
-            <div class="reveal reveal-delay-1 max-w-3xl mx-auto">
-                <div class="card p-7 text-center border-dashed border-surface-3 bg-white">
-                    <i data-lucide="file-text" class="w-10 h-10 text-ink-5 mx-auto mb-4"></i>
-                    <h3 class="text-lg font-semibold text-ink-3 mb-1">No publications yet</h3>
-                    <p class="text-ink-5 text-sm">Stay tuned! Future publications will appear in this section.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Projects -->
-    <section id="projects" class="py-20 md:py-28 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="reveal mb-14 text-center">
-                <p class="text-xs font-mono uppercase tracking-[0.25em] text-cyan-600 mb-3">Featured Project</p>
-                <h2 class="text-3xl md:text-5xl font-bold tracking-tight text-ink-0 mb-4">Final Year Project Recognition</h2>
-                
-                <!-- Beautiful Serif Headline Added Here -->
-                <p class="font-serif italic text-2xl md:text-3xl text-ink-3 mb-6 tracking-tight">
-                    The project that started my career
-                </p>
-                
-                <p class="text-ink-4 text-[15px] max-w-3xl mx-auto leading-relaxed">
-                    Aetherion VZ Alpha 400B (SentiVita) — A full-stack, AI-driven clinical decision support interface fusing computer vision diagnostics, a retrieval-grounded medical assistant, and biometric patient identity verification.
-                </p>
-            </div>
-
-            <div class="reveal reveal-delay-1 grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-                <div class="h-64 sm:h-80 md:h-96 bg-surface-2 border border-surface-3 rounded-xl flex items-center justify-center p-5 hover:border-blue-200 transition-colors">
-                    <img src="https://github.com/user-attachments/assets/ca8724e4-6c3c-424f-bb86-a585e0e1349a" alt="Aetherion" class="max-w-full max-h-full object-contain rounded-lg">
-                </div>
-                <div class="h-64 sm:h-80 md:h-96 bg-surface-2 border border-surface-3 rounded-xl flex items-center justify-center p-5 hover:border-blue-200 transition-colors">
-                    <img src="https://github.com/user-attachments/assets/ad67296b-e4de-4e81-962b-703ecfb0d4ca" alt="Classifier" class="max-w-full max-h-full object-contain rounded-lg">
-                </div>
-                <div class="h-64 sm:h-80 md:h-96 bg-surface-2 border border-surface-3 rounded-xl flex items-center justify-center p-5 hover:border-blue-200 transition-colors">
-                    <img src="https://github.com/user-attachments/assets/70d5d785-7532-492b-b97e-47d4e8accbb1" alt="Demo" class="max-w-full max-h-full object-contain rounded-lg">
-                </div>
-                <div class="h-64 sm:h-80 md:h-96 bg-surface-2 border border-surface-3 rounded-xl flex items-center justify-center p-5 hover:border-blue-200 transition-colors">
-                    <img src="https://github.com/user-attachments/assets/dc6298cd-e0cb-409e-b954-28ffe0002f8f" alt="MOH" class="max-w-full max-h-full object-contain rounded-lg">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="reveal reveal-delay-2 md:col-span-2 card p-7">
-                    <h3 class="text-xl font-bold text-ink-0 mb-5 tracking-tight">System Architecture</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="p-4 bg-surface-1 rounded-xl border border-surface-3">
-                            <i data-lucide="brain" class="w-6 h-6 text-violet-600 mb-2.5"></i>
-                            <h4 class="font-semibold text-sm text-ink-0 mb-1">LLM Reasoning Layer</h4>
-                            <p class="text-ink-5 text-[13px] leading-relaxed">Llama 4 Maverick (400B MoE). 17B active parameters per token, 128 routed experts, early-fusion multimodality.</p>
-                        </div>
-                        <div class="p-4 bg-surface-1 rounded-xl border border-surface-3">
-                            <i data-lucide="scan-eye" class="w-6 h-6 text-cyan-600 mb-2.5"></i>
-                            <h4 class="font-semibold text-sm text-ink-0 mb-1">14 ResNet50 Classifiers</h4>
-                            <p class="text-ink-5 text-[13px] leading-relaxed">Fine-tuned diagnostic models: Diabetic Retinopathy, Brain Tumors, Alzheimer's, Breast Cancer, etc.</p>
-                        </div>
-                        <div class="p-4 bg-surface-1 rounded-xl border border-surface-3">
-                            <i data-lucide="database" class="w-6 h-6 text-blue-600 mb-2.5"></i>
-                            <h4 class="font-semibold text-sm text-ink-0 mb-1">Naive RAG Pipeline</h4>
-                            <p class="text-ink-5 text-[13px] leading-relaxed">PubMed, BioASQ, ChatDoctor corpus. Embedded via all-MiniLM-L6-v2 with cosine similarity retrieval.</p>
-                        </div>
-                        <div class="p-4 bg-surface-1 rounded-xl border border-surface-3">
-                            <i data-lucide="fingerprint" class="w-6 h-6 text-emerald-600 mb-2.5"></i>
-                            <h4 class="font-semibold text-sm text-ink-0 mb-1">Biometric Verification</h4>
-                            <p class="text-ink-5 text-[13px] leading-relaxed">OpenCV Haar cascades & face_recognition for role-based live webcam identity verification.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="reveal reveal-delay-3 card p-7 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-2.5 mb-3">
-                            <i data-lucide="landmark" class="w-6 h-6 text-amber-600"></i>
-                            <h3 class="text-base font-bold text-ink-0">Government Recognition</h3>
-                        </div>
-                        <p class="text-ink-4 text-[15px] leading-relaxed mb-5">
-                            Live demonstration to Malaysia's Deputy Minister of Health, coinciding with APU being named an official consultant to the Ministry of Health's Health Performance Unit.
-                        </p>
-                    </div>
-                    <a href="https://github.com/sufirumii/Final-Year-Project-Aetherion-VZ-Alpha-400B-" target="_blank" rel="noopener" class="group inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                        View Repository
-                        <i data-lucide="arrow-up-right" class="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact -->
-    <footer id="contact" class="py-20 md:py-28 px-6 bg-surface-1">
-        <div class="max-w-5xl mx-auto text-center reveal">
-            <p class="text-xs font-mono uppercase tracking-[0.25em] text-violet-600 mb-4">Contact</p>
-            <h2 class="text-4xl md:text-6xl font-extrabold text-ink-0 mb-10 tracking-[-0.02em]">Get in Touch</h2>
-            <a href="mailto:sufirumii@gmail.com" class="inline-flex items-center gap-3 px-8 py-4 bg-ink-0 text-white font-semibold rounded-lg hover:bg-ink-1 transition-colors text-base shadow-lg shadow-ink-0/10">
-                <i data-lucide="mail" class="w-5 h-5"></i>
-                sufirumii@gmail.com
-            </a>
-            <div class="flex justify-center gap-8 mt-16 text-ink-5">
-                <a href="https://github.com/sufirumii" target="_blank" rel="noopener" class="hover:text-ink-0 transition-colors flex items-center gap-1.5 text-sm"><i data-lucide="github" class="w-4 h-4"></i> GitHub</a>
-                <a href="https://huggingface.co/Rumiii" target="_blank" rel="noopener" class="hover:text-ink-0 transition-colors flex items-center gap-1.5 text-sm"><i data-lucide="brain" class="w-4 h-4"></i> Hugging Face</a>
-                <a href="https://www.linkedin.com" target="_blank" rel="noopener" class="hover:text-ink-0 transition-colors flex items-center gap-1.5 text-sm"><i data-lucide="linkedin" class="w-4 h-4"></i> LinkedIn</a>
-            </div>
-            <p class="mt-12 text-xs text-ink-5 font-mono tracking-wider">Srinagar, India • UTC +5:30</p>
-        </div>
-    </footer>
-
-    <script>
-        lucide.createIcons();
-
-        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
-            document.getElementById('mobile-menu').classList.toggle('hidden');
-        });
-        document.querySelectorAll('#mobile-menu a').forEach(a => {
-            a.addEventListener('click', () => document.getElementById('mobile-menu').classList.add('hidden'));
-        });
-
-        document.querySelectorAll('.hover-image-reveal').forEach(card => {
-            card.addEventListener('click', e => {
-                if (window.innerWidth < 768) {
-                    e.stopPropagation();
-                    document.querySelectorAll('.hover-image-reveal').forEach(o => { if(o!==card) o.classList.remove('show-image'); });
-                    card.classList.toggle('show-image');
-                }
-            });
-        });
-        document.addEventListener('click', () => {
-            if (window.innerWidth < 768) document.querySelectorAll('.hover-image-reveal').forEach(c => c.classList.remove('show-image'));
-        });
-
-        const revealEls = document.querySelectorAll('.reveal');
-        const onScroll = () => {
-            revealEls.forEach(el => { if (el.getBoundingClientRect().top < window.innerHeight - 80) el.classList.add('active'); });
-        };
-        window.addEventListener('scroll', onScroll);
-        setTimeout(onScroll, 100);
-    </script>
+lucide.createIcons();
+const nav=$('nav');const sc=()=>{nav.classList.toggle('solid',scrollY>40);document.querySelectorAll('.reveal').forEach(e=>{if(e.getBoundingClientRect().top<innerHeight-80)e.classList.add('active')})};
+addEventListener('scroll',sc);setTimeout(sc,100);
+$('mbtn').onclick=()=>{$('mmenu').classList.toggle('hidden');nav.classList.add('solid')};
+document.querySelectorAll('#mmenu a').forEach(a=>a.onclick=()=>$('mmenu').classList.add('hidden'));
+document.querySelectorAll('.hover-image-reveal').forEach(c=>c.addEventListener('click',e=>{if(innerWidth<768){e.stopPropagation();document.querySelectorAll('.hover-image-reveal').forEach(o=>o!==c&&o.classList.remove('show-image'));c.classList.toggle('show-image')}}));
+document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorAll('.hover-image-reveal').forEach(c=>c.classList.remove('show-image'))});
+</script>
 </body>
 </html>
