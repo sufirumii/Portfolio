@@ -84,13 +84,14 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
       </div>
       <div class="hidden md:flex items-center gap-2.5">
         <a href="https://github.com/sufirumii" target="_blank" rel="noopener" class="glass flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg hover:bg-white/15 transition-colors"><i data-lucide="github" class="w-4 h-4"></i>GitHub</a>
-        <a href="https://huggingface.co/Rumiii" target="_blank" rel="noopener" class="flex items-center gap-2 px-4 py-1.5 text-sm font-semibold text-navy bg-white rounded-lg hover:bg-steel-100 transition-colors"><i data-lucide="brain" class="w-4 h-4"></i>Hugging Face</a>
+        <button id="hf-open-btn" type="button" class="flex items-center gap-2 px-4 py-1.5 text-sm font-semibold text-navy bg-white rounded-lg hover:bg-steel-100 transition-colors cursor-pointer"><i data-lucide="brain" class="w-4 h-4"></i>Hugging Face</button>
       </div>
       <button id="mbtn" aria-label="Menu" class="md:hidden"><i data-lucide="menu" class="w-6 h-6"></i></button>
     </div>
     <div id="mmenu" class="hidden md:hidden bg-navy/95 backdrop-blur px-6 py-5 space-y-4 border-t border-white/10">
       <a href="#experience" class="block">Experience</a><a href="#recognition" class="block">Recognition</a>
       <a href="#projects" class="block">Project</a><a href="#contact" class="block">Contact</a>
+      <button id="hf-open-btn-m" type="button" class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-navy bg-white rounded-lg w-fit cursor-pointer"><i data-lucide="brain" class="w-4 h-4"></i>Hugging Face</button>
     </div>
   </nav>
 
@@ -215,6 +216,752 @@ $('mbtn').onclick=()=>{$('mmenu').classList.toggle('hidden');nav.classList.add('
 document.querySelectorAll('#mmenu a').forEach(a=>a.onclick=()=>$('mmenu').classList.add('hidden'));
 document.querySelectorAll('.hover-image-reveal').forEach(c=>c.addEventListener('click',e=>{if(innerWidth<768){e.stopPropagation();document.querySelectorAll('.hover-image-reveal').forEach(o=>o!==c&&o.classList.remove('show-image'));c.classList.toggle('show-image')}}));
 document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorAll('.hover-image-reveal').forEach(c=>c.classList.remove('show-image'))});
+
+/* ================================================================ */
+/*  HUGGING FACE PROFILE OVERLAY                                    */
+/*  Self-contained: live data from huggingface.co (CORS-enabled).   */
+/*  Scoped under #hf-overlay with .hf- prefixed classes so it never  */
+/*  collides with the portfolio's own styles.                        */
+/* ================================================================ */
+(function(){
+  const HF_USER = 'Rumiii';
+  const HF_API  = 'https://huggingface.co/api';
+  const PROFILE_URL = 'https://huggingface.co/' + HF_USER;
+
+  /* ---------- small helpers ---------- */
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const fmtNum = n => n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'')+'M'
+                    : n>=1e3 ? (n/1e3).toFixed(1).replace(/\.0$/,'')+'k'
+                    : String(n);
+  const fmtDate = iso => { if(!iso) return '—'; const d=new Date(iso); return isNaN(d)? iso.slice(0,10)
+      : d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}); };
+  const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const TASK_LABELS = {'text-generation':'Text Generation','text-classification':'Text Classification','fill-mask':'Fill-Mask','token-classification':'Token Classification','question-answering':'Question Answering','image-classification':'Image Classification','automatic-speech-recognition':'Speech Recognition','summarization':'Summarization','translation':'Translation'};
+  const humanTask = t => { if(!t) return null; const c=t.replace('task_categories:',''); return TASK_LABELS[c] || c.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase()); };
+
+  function licenseOf(card){ if(!card||!card.license) return null; return Array.isArray(card.license)?(card.license[0]||null):card.license; }
+
+  function extractSummary(readme){
+    if(!readme) return null;
+    let t = readme;
+    t = t.replace(/^---\s*\n[\s\S]*?\n---\s*\n/i,'');
+    t = t.replace(/<!--[\s\S]*?-->/g,'');
+    t = t.replace(/```[\s\S]*?```/g,'');
+    t = t.split('\n').filter(l=>!l.trim().startsWith('|')).join('\n');
+    t = t.replace(/!\[[^\]]*\]\([^)]*\)/g,'');
+    t = t.replace(/^\s*\[[^\]]*\]\([^)]*\)\s*$/gm,'');
+    t = t.replace(/\[([^\]]+)\]\([^)]*\)/g,'$1');
+    t = t.replace(/^#{1,6}\s*/gm,'');
+    t = t.replace(/\*{1,3}([^*]+)\*{1,3}/g,'$1');
+    t = t.replace(/_{1,3}([^_]+)_{1,3}/g,'$1');
+    t = t.replace(/\n{3,}/g,'\n\n').trim();
+    if(!t) return null;
+    const paras = t.split(/\n{2,}/);
+    for(const raw of paras){
+      const p = raw.replace(/\s+/g,' ').trim();
+      if(!p) continue;
+      const wc = p.split(/\s+/).length;
+      if(wc<4) continue;
+      // Skip question-style section headings, e.g. "What is LlamaTron RS1
+      // MedThinker?" — these are NOT descriptions, they're section headers.
+      if(wc<=10 && /[?]\s*$/.test(p) && !/[.]\s/.test(p)) continue;
+      const looks = /[.!?](\s|$)/.test(p) || p.length>=60;
+      if(!looks && p.length<40) continue;
+      return p.length>320 ? p.slice(0,317)+'…' : p;
+    }
+    const fb = t.split('\n').map(l=>l.replace(/\s+/g,' ').trim()).find(l=>l.length>=20);
+    if(!fb) return null;
+    return fb.length>320 ? fb.slice(0,317)+'…' : fb;
+  }
+
+  async function fetchJSON(url, ms=9000){
+    const c = new AbortController(); const tm=setTimeout(()=>c.abort(),ms);
+    try{ const r=await fetch(url,{signal:c.signal,headers:{Accept:'application/json'}}); if(!r.ok) return null; return await r.json(); }
+    catch(_){ return null; } finally{ clearTimeout(tm); }
+  }
+  async function fetchReadme(repoId, ms=6000){
+    const c = new AbortController(); const tm=setTimeout(()=>c.abort(),ms);
+    try{ const r=await fetch(`https://huggingface.co/${repoId}/raw/main/README.md`,{signal:c.signal}); if(!r.ok) return null; return await r.text(); }
+    catch(_){ return null; } finally{ clearTimeout(tm); }
+  }
+  // Fallback for gated/restricted repos (README returns 401): the per-repo
+  // API still exposes the YAML frontmatter via cardData.
+  async function fetchModelCardData(repoId, ms=6000){
+    const c = new AbortController(); const tm=setTimeout(()=>c.abort(),ms);
+    try{ const r=await fetch(`https://huggingface.co/api/models/${repoId}?expand[]=cardData`,{signal:c.signal,headers:{Accept:'application/json'}}); if(!r.ok) return null; const d=await r.json(); return d.cardData||null; }
+    catch(_){ return null; } finally{ clearTimeout(tm); }
+  }
+  const TASK_LABELS2 = {'text-generation':'Text Generation','text-classification':'Text Classification','fill-mask':'Fill-Mask','token-classification':'Token Classification','question-answering':'Question Answering','image-classification':'Image Classification','automatic-speech-recognition':'Speech Recognition','summarization':'Summarization','translation':'Translation'};
+  function humanTaskLabel2(task){ return TASK_LABELS2[task] || task.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase()); }
+  // Build a meaningful description from cardData when no README is available.
+  function describeFromCardData(cardData, fallbackName){
+    if(!cardData) return null;
+    const parts=[];
+    const task = cardData.pipeline_tag ? humanTaskLabel2(cardData.pipeline_tag) : null;
+    const base = Array.isArray(cardData.base_model) ? (cardData.base_model[0]) : cardData.base_model;
+    const NOISE2 = new Set(['transformers','safetensors','pytorch','gguf','endpoints_compatible','text-generation-inference','conversational']);
+    const tags = (cardData.tags||[]).filter(t=>!NOISE2.has(t));
+    if(task && base) parts.push('Fine-tuned '+task.toLowerCase()+' model based on '+base+'.');
+    else if(base) parts.push('Fine-tuned model based on '+base+'.');
+    else if(task) parts.push(task+' model.');
+    else if(fallbackName) parts.push(fallbackName+'.');
+    if(tags.length) parts.push('Focused on: '+tags.slice(0,6).join(', ')+(tags.length>6?', and more.':'.'));
+    return parts.length ? parts.join(' ') : null;
+  }
+
+  /* ---------- state ---------- */
+  let state = { user:null, models:[], datasets:[], fetchedAt:null, loaded:false, loading:false };
+  let tab = 'models', query='', sort='downloads';
+
+  /* ---------- DOM build ---------- */
+  const overlay = document.createElement('div');
+  overlay.id = 'hf-overlay';
+  overlay.setAttribute('hidden','');
+  overlay.innerHTML = `
+    <div class="hf-bg" aria-hidden="true"></div>
+    <div class="hf-bg-overlay" aria-hidden="true"></div>
+    <div class="hf-orb hf-orb-1" aria-hidden="true"></div>
+    <div class="hf-orb hf-orb-2" aria-hidden="true"></div>
+
+    <div class="hf-scroll">
+      <div class="hf-topbar">
+        <div class="hf-topbar-left">
+          <span class="hf-hflogo" aria-hidden="true">🤗</span>
+          <span class="hf-topbar-title">Hugging Face Profile</span>
+        </div>
+        <button class="hf-close" id="hf-close" aria-label="Close Hugging Face panel" title="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="hf-container">
+        <div id="hf-hero" class="hf-hero"></div>
+
+        <section class="hf-repos">
+          <div class="hf-repos-head">
+            <h2 class="hf-repos-title">Public Repositories <span class="hf-count-pill" id="hf-count">0</span></h2>
+            <p class="hf-repos-sub">Live from Hugging Face — every entry is fetched in real time.</p>
+          </div>
+
+          <div class="hf-controls">
+            <div class="hf-tabs" role="tablist">
+              <button class="hf-tab" data-tab="models" role="tab">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+                Models <span class="hf-tab-count" id="hf-models-count">0</span>
+              </button>
+              <button class="hf-tab" data-tab="datasets" role="tab">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+                Datasets <span class="hf-tab-count" id="hf-datasets-count">0</span>
+              </button>
+            </div>
+            <div class="hf-tools">
+              <div class="hf-search-wrap">
+                <svg class="hf-search-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input id="hf-search" class="hf-input" placeholder="Search repositories…" />
+              </div>
+              <div class="hf-select-wrap">
+                <svg class="hf-select-ic" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></svg>
+                <select id="hf-sort" class="hf-select">
+                  <option value="downloads">Most downloaded</option>
+                  <option value="likes">Most liked</option>
+                  <option value="recent">Recently updated</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="hf-grid" id="hf-grid"></div>
+        </section>
+
+        <footer class="hf-footer">
+          <span class="hf-footer-left">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="color:#fbbf24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            Profile data fetched live from <a href="${PROFILE_URL}" target="_blank" rel="noopener" class="hf-link">huggingface.co</a>
+          </span>
+          <span class="hf-footer-right" id="hf-updated"></span>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Opaque details modal -->
+    <div class="hf-modal" id="hf-modal" hidden>
+      <div class="hf-modal-backdrop" id="hf-modal-bg"></div>
+      <div class="hf-modal-card" id="hf-modal-card" role="dialog" aria-modal="true" aria-labelledby="hf-modal-title"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  /* ---------- styles (scoped via #hf-overlay) ---------- */
+  const style = document.createElement('style');
+  style.textContent = `
+#hf-overlay{position:fixed;inset:0;z-index:200;display:none;color:#e7ecf5;font-family:Inter,system-ui,sans-serif}
+#hf-overlay:not([hidden]){display:block}
+#hf-overlay *{box-sizing:border-box}
+#hf-overlay .hf-bg{position:fixed;inset:0;z-index:-2;background:url('hf-wallpaper.png') center/cover no-repeat}
+#hf-overlay .hf-bg-overlay{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+   radial-gradient(1200px 600px at 15% -10%,rgba(251,191,36,.12),transparent 60%),
+   radial-gradient(1000px 500px at 110% 10%,rgba(45,212,191,.08),transparent 55%),
+   linear-gradient(180deg,rgba(8,11,22,.74) 0,rgba(8,11,22,.9) 50%,rgba(5,7,15,.97) 100%)}
+#hf-overlay .hf-orb{position:fixed;border-radius:9999px;pointer-events:none;z-index:-1;filter:blur(60px)}
+#hf-overlay .hf-orb-1{top:-90px;left:-90px;width:280px;height:280px;background:rgba(251,191,36,.12)}
+#hf-overlay .hf-orb-2{top:33%;right:-90px;width:320px;height:320px;background:rgba(45,212,191,.08)}
+#hf-overlay .hf-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(251,191,36,.5) transparent}
+#hf-overlay .hf-scroll::-webkit-scrollbar{width:8px}
+#hf-overlay .hf-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(251,191,36,.45),rgba(245,158,11,.35));border-radius:9999px}
+#hf-overlay .hf-topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;background:linear-gradient(180deg,rgba(7,10,20,.85),rgba(7,10,20,.55));backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(255,255,255,.08)}
+#hf-overlay .hf-topbar-left{display:flex;align-items:center;gap:10px}
+#hf-overlay .hf-hflogo{font-size:22px;line-height:1;filter:drop-shadow(0 0 12px rgba(251,191,36,.4))}
+#hf-overlay .hf-topbar-title{font-weight:600;font-size:15px;letter-spacing:.2px;color:#fff}
+#hf-overlay .hf-close{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#e7ecf5;cursor:pointer;transition:all .2s}
+#hf-overlay .hf-close:hover{background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.45);color:#fde68a}
+#hf-overlay .hf-container{max-width:1152px;margin:0 auto;padding:32px 22px 64px}
+@media(max-width:640px){#hf-overlay .hf-container{padding:24px 16px 56px}#hf-overlay .hf-topbar{padding:12px 16px}}
+
+#hf-overlay .hf-hero{position:relative;border-radius:24px;padding:28px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.04));
+  backdrop-filter:blur(28px) saturate(150%);-webkit-backdrop-filter:blur(28px) saturate(150%);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 16px 48px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.1)}
+#hf-overlay .hf-hero::before{content:'';position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(251,191,36,.6),transparent);background-size:200% 100%;animation:hf-shimmer 3.2s linear infinite}
+@keyframes hf-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+#hf-overlay .hf-hero-top{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+#hf-overlay .hf-avatar{flex:0 0 auto;width:112px;height:112px;border-radius:18px;object-fit:cover;
+  box-shadow:0 0 0 1px rgba(251,191,36,.35),0 0 28px rgba(251,191,36,.22);background:rgba(251,191,36,.15)}
+#hf-overlay .hf-avatar-fb{flex:0 0 auto;width:112px;height:112px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+  font-size:42px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,.18);box-shadow:0 0 0 1px rgba(251,191,36,.35),0 0 28px rgba(251,191,36,.22)}
+#hf-overlay .hf-id-wrap{flex:1 1 240px;min-width:0}
+#hf-overlay .hf-badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+#hf-overlay .hf-badge-user{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(251,191,36,.3);
+  background:rgba(251,191,36,.1);color:#fde68a;padding:4px 11px;border-radius:9999px;font-size:12px;font-weight:500}
+#hf-overlay .hf-badge-user .dot{width:6px;height:6px;border-radius:9999px;background:#fcd34d}
+#hf-overlay .hf-badge-pro{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);padding:4px 11px;border-radius:9999px;font-size:12px;font-weight:500}
+#hf-overlay .hf-name{font-size:clamp(28px,4vw,46px);font-weight:700;letter-spacing:-.02em;line-height:1.05;margin:0;
+  background:linear-gradient(135deg,#fde68a,#fbbf24 45%,#f59e0b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+#hf-overlay .hf-title{margin:8px 0 0;font-size:clamp(17px,2vw,21px);font-weight:600;color:rgba(253,230,138,.9)}
+#hf-overlay .hf-meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px}
+#hf-overlay .hf-chip-since{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);padding:6px 12px;border-radius:10px;font-size:12px}
+#hf-overlay .hf-chip-since svg{color:#fbbf24}
+#hf-overlay .hf-stats{margin-top:28px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:640px){#hf-overlay .hf-stats{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1024px){#hf-overlay .hf-stats{grid-template-columns:repeat(5,1fr)}}
+#hf-overlay .hf-stat{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);
+  transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s,border-color .35s}
+#hf-overlay .hf-stat:hover{transform:translateY(-4px);border-color:rgba(251,191,36,.45);
+  box-shadow:0 22px 56px rgba(0,0,0,.5),0 0 0 1px rgba(251,191,36,.2),inset 0 1px 0 rgba(255,255,255,.12)}
+#hf-overlay .hf-stat-ic{flex:0 0 auto;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(251,191,36,.15);color:#fcd34d}
+#hf-overlay .hf-stat-val{font-size:18px;font-weight:600;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums}
+#hf-overlay .hf-stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.55)}
+
+#hf-overlay .hf-repos{margin-top:48px}
+#hf-overlay .hf-repos-head{margin-bottom:22px}
+#hf-overlay .hf-repos-title{font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em;color:#fff;margin:0;display:flex;align-items:center;gap:10px}
+#hf-overlay .hf-count-pill{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-size:14px;font-weight:500;padding:2px 10px;border-radius:9999px}
+#hf-overlay .hf-repos-sub{margin:6px 0 0;color:rgba(255,255,255,.55);font-size:14px}
+
+#hf-overlay .hf-controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:22px}
+#hf-overlay .hf-tabs{display:inline-flex;gap:4px;padding:4px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px)}
+#hf-overlay .hf-tab{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;border:none;background:transparent;
+  color:rgba(255,255,255,.65);font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit}
+#hf-overlay .hf-tab:hover{color:#fff}
+#hf-overlay .hf-tab.active{background:rgba(251,191,36,.2);color:#fde68a}
+#hf-overlay .hf-tab-count{background:rgba(255,255,255,.1);color:inherit;font-size:12px;padding:1px 8px;border-radius:9999px}
+#hf-overlay .hf-tools{display:flex;flex-wrap:wrap;gap:10px}
+#hf-overlay .hf-search-wrap{position:relative}
+#hf-overlay .hf-search-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4)}
+#hf-overlay .hf-input{width:240px;max-width:60vw;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.1);
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));backdrop-filter:blur(18px);
+  color:#fff;padding:0 12px 0 36px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s}
+#hf-overlay .hf-input::placeholder{color:rgba(255,255,255,.4)}
+#hf-overlay .hf-input:focus{border-color:rgba(251,191,36,.45);box-shadow:0 0 0 3px rgba(251,191,36,.15)}
+#hf-overlay .hf-select-wrap{position:relative}
+#hf-overlay .hf-select-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.5);pointer-events:none}
+#hf-overlay .hf-select{height:42px;width:170px;border-radius:12px;border:1px solid rgba(255,255,255,.1);
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));backdrop-filter:blur(18px);
+  color:#fff;padding:0 12px 0 36px;font-size:14px;font-family:inherit;cursor:pointer;outline:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e7ecf5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+#hf-overlay .hf-select option{background:#0b1220;color:#fff}
+@media(max-width:640px){#hf-overlay .hf-input{width:100%}#hf-overlay .hf-select{width:100%}#hf-overlay .hf-tools{width:100%}#hf-overlay .hf-controls{flex-direction:column;align-items:stretch}}
+
+#hf-overlay .hf-grid{display:grid;grid-template-columns:repeat(1,1fr);gap:16px}
+@media(min-width:640px){#hf-overlay .hf-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){#hf-overlay .hf-grid{grid-template-columns:repeat(3,1fr)}}
+
+#hf-overlay .hf-card{position:relative;display:flex;flex-direction:column;padding:20px;border-radius:18px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08);
+  transition:transform .35s cubic-bezier(.16,1,.3,1),box-shadow .35s,border-color .35s;animation:hf-in .45s both}
+@keyframes hf-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+#hf-overlay .hf-card:hover{transform:translateY(-6px);border-color:rgba(251,191,36,.45);
+  box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 1px rgba(251,191,36,.2),inset 0 1px 0 rgba(255,255,255,.12)}
+#hf-overlay .hf-card-link{position:absolute;inset:0;z-index:0;border-radius:18px}
+#hf-overlay .hf-card-head{position:relative;z-index:1;display:flex;gap:12px;align-items:flex-start}
+#hf-overlay .hf-card-ic{flex:0 0 auto;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+#hf-overlay .hf-card-ic.model{background:rgba(251,191,36,.15);color:#fcd34d}
+#hf-overlay .hf-card-ic.dataset{background:rgba(45,212,191,.15);color:#5eead4}
+#hf-overlay .hf-card-author{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hf-overlay .hf-card-name{font-size:16px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hf-overlay .hf-card-tags{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+#hf-overlay .hf-tag{display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:2px 8px;font-size:11px;font-weight:500}
+#hf-overlay .hf-tag.task{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.78)}
+#hf-overlay .hf-tag.task svg{color:#fbbf24}
+#hf-overlay .hf-tag.lic{border:1px solid rgba(52,211,153,.25);background:rgba(16,185,129,.1);color:#6ee7b7}
+#hf-overlay .hf-tag.tag-sm{border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-size:10px}
+#hf-overlay .hf-card-summary{position:relative;z-index:1;margin-top:12px;font-size:14px;line-height:1.55;color:rgba(255,255,255,.6);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#hf-overlay .hf-card-summary.empty{font-style:italic;color:rgba(255,255,255,.35)}
+#hf-overlay .hf-card-foot{position:relative;z-index:1;margin-top:auto;padding-top:16px;display:flex;align-items:center;justify-content:space-between}
+#hf-overlay .hf-stats-row{display:flex;gap:12px;font-size:12px;color:rgba(255,255,255,.55)}
+#hf-overlay .hf-stats-row span{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+#hf-overlay .hf-card-date{font-size:11px;color:rgba(255,255,255,.4)}
+#hf-overlay .hf-card-actions{position:relative;z-index:2;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between}
+#hf-overlay .hf-details-btn{display:inline-flex;align-items:center;gap:6px;border-radius:10px;border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.8);font-size:12px;font-weight:500;padding:6px 12px;cursor:pointer;
+  font-family:inherit;transition:all .2s}
+#hf-overlay .hf-details-btn:hover{border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.1);color:#fde68a}
+#hf-overlay .hf-open-hint{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:#fbbf24;opacity:0;transform:translateY(6px);transition:all .3s}
+#hf-overlay .hf-card:hover .hf-open-hint{opacity:1;transform:none}
+
+#hf-overlay .hf-empty{padding:64px 20px;text-align:center;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+#hf-overlay .hf-empty-ic{margin:0 auto 12px;width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);color:rgba(255,255,255,.4)}
+
+#hf-overlay .hf-skel{position:relative;border-radius:24px;padding:28px;overflow:hidden;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+#hf-overlay .hf-skel-row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+#hf-overlay .hf-skel-av{width:112px;height:112px;border-radius:18px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
+#hf-overlay .hf-skel-line{height:12px;border-radius:6px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
+#hf-overlay .hf-skel-stats{margin-top:28px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:1024px){#hf-overlay .hf-skel-stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){#hf-overlay .hf-skel-stats{grid-template-columns:repeat(2,1fr)}}
+#hf-overlay .hf-skel-stat{height:62px;border-radius:14px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
+#hf-overlay .hf-skel-grid{margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:1024px){#hf-overlay .hf-skel-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){#hf-overlay .hf-skel-grid{grid-template-columns:1fr}}
+#hf-overlay .hf-skel-card{height:220px;border-radius:18px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
+@keyframes hf-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+#hf-overlay .hf-footer{margin-top:48px;padding:22px 0;border-top:1px solid rgba(255,255,255,.1);
+  background:rgba(0,0,0,.3);backdrop-filter:blur(12px);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  font-size:13px;color:rgba(255,255,255,.55)}
+#hf-overlay .hf-footer-left{display:flex;align-items:center;gap:6px}
+#hf-overlay .hf-link{color:#fbbf24;font-weight:500;text-decoration:none}
+#hf-overlay .hf-link:hover{text-decoration:underline}
+#hf-overlay .hf-footer-right{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.45)}
+
+/* OPAQUE modal — background never shows through */
+#hf-overlay .hf-modal{position:fixed;inset:0;z-index:210;display:none}
+#hf-overlay .hf-modal:not([hidden]){display:block}
+#hf-overlay .hf-modal-backdrop{position:absolute;inset:0;background:rgba(3,6,14,.86);backdrop-filter:blur(8px);animation:hf-fade .2s both}
+@keyframes hf-fade{from{opacity:0}to{opacity:1}}
+#hf-overlay .hf-modal-card{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(640px,calc(100% - 32px));max-height:88vh;display:flex;flex-direction:column;overflow:hidden;border-radius:20px;
+  background:#0b1220;border:1px solid rgba(251,191,36,.18);
+  box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04);
+  animation:hf-pop .25s cubic-bezier(.16,1,.3,1) both}
+@keyframes hf-pop{from{opacity:0;transform:translate(-50%,-46%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#hf-overlay .hf-modal-head{padding:24px;border-bottom:1px solid rgba(255,255,255,.1)}
+#hf-overlay .hf-modal-head-top{display:flex;gap:16px;align-items:flex-start}
+#hf-overlay .hf-modal-ic{flex:0 0 auto;width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+#hf-overlay .hf-modal-ic.model{background:rgba(251,191,36,.15);color:#fcd34d}
+#hf-overlay .hf-modal-ic.dataset{background:rgba(45,212,191,.15);color:#5eead4}
+#hf-overlay .hf-modal-idwrap{flex:1;min-width:0}
+#hf-overlay .hf-modal-title{font-size:20px;font-weight:700;color:#fff;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hf-overlay .hf-modal-id{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.5);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hf-overlay .hf-modal-kind{flex:0 0 auto;border-radius:9999px;padding:4px 11px;font-size:11px;font-weight:500}
+#hf-overlay .hf-modal-kind.model{border:1px solid rgba(251,191,36,.3);background:rgba(251,191,36,.1);color:#fde68a}
+#hf-overlay .hf-modal-kind.dataset{border:1px solid rgba(45,212,191,.3);background:rgba(45,212,191,.1);color:#99f6e4}
+#hf-overlay .hf-modal-badges{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+#hf-overlay .hf-modal-body{padding:0 24px;overflow-y:auto;max-height:55vh;scrollbar-width:thin;scrollbar-color:rgba(251,191,36,.5) transparent}
+#hf-overlay .hf-modal-body::-webkit-scrollbar{width:8px}
+#hf-overlay .hf-modal-body::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(251,191,36,.45),rgba(245,158,11,.35));border-radius:9999px}
+#hf-overlay .hf-modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 0}
+@media(max-width:560px){#hf-overlay .hf-modal-stats{grid-template-columns:repeat(2,1fr)}}
+#hf-overlay .hf-modal-stat{text-align:center;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.1)}
+#hf-overlay .hf-modal-stat-ic{margin:0 auto 4px;color:#fbbf24}
+#hf-overlay .hf-modal-stat-val{font-size:18px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+#hf-overlay .hf-modal-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.45)}
+#hf-overlay .hf-modal-section{padding:8px 0}
+#hf-overlay .hf-modal-h4{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#fbbf24;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+#hf-overlay .hf-modal-p{font-size:14px;line-height:1.6;color:rgba(255,255,255,.78);margin:0}
+#hf-overlay .hf-modal-meta{border-top:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1)}
+#hf-overlay .hf-modal-metarow{display:flex;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.05)}
+#hf-overlay .hf-modal-metarow:first-child{border-top:none}
+#hf-overlay .hf-modal-meta-ic{flex:0 0 auto;width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:#fbbf24}
+#hf-overlay .hf-modal-meta-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.45)}
+#hf-overlay .hf-modal-meta-val{font-size:13px;color:rgba(255,255,255,.85);margin-top:2px}
+#hf-overlay .hf-modal-dsref{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(45,212,191,.2);background:rgba(45,212,191,.1);color:#5eead4;font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 7px;border-radius:6px;text-decoration:none;margin:2px 4px 2px 0}
+#hf-overlay .hf-modal-dsref:hover{background:rgba(45,212,191,.2)}
+#hf-overlay .hf-modal-taggrid{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 16px}
+#hf-overlay .hf-modal-tag{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.65);font-size:11px;padding:2px 8px;border-radius:6px}
+#hf-overlay .hf-modal-foot{padding:16px 24px;border-top:1px solid rgba(255,255,255,.1)}
+#hf-overlay .hf-modal-openbtn{display:inline-flex;width:100%;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:12px;
+  background:linear-gradient(135deg,#fde68a,#fbbf24 45%,#f59e0b);color:#0f172a;font-size:14px;font-weight:600;text-decoration:none;
+  font-family:inherit;box-shadow:0 12px 28px rgba(245,158,11,.25);transition:transform .2s}
+#hf-overlay .hf-modal-openbtn:hover{transform:translateY(-1px)}
+#hf-overlay .hf-modal-x{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#e7ecf5;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s}
+#hf-overlay .hf-modal-x:hover{background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.45);color:#fde68a}
+#hf-overlay .hf-error{margin:80px auto;max-width:420px;text-align:center;padding:32px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+#hf-overlay .hf-error-ic{margin:0 auto 16px;width:56px;height:56px;border-radius:16px;background:rgba(244,63,94,.15);color:#fda4af;display:flex;align-items:center;justify-content:center}
+#hf-overlay .hf-error h3{color:#fff;font-size:18px;margin:0 0 6px}
+#hf-overlay .hf-error p{color:rgba(255,255,255,.6);font-size:14px;margin:0 0 20px}
+#hf-overlay .hf-retry{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:11px;border:none;background:#fbbf24;color:#0f172a;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px}
+#hf-overlay .hf-retry:hover{background:#f59e0b}
+body.hf-open{overflow:hidden}
+`;
+  document.head.appendChild(style);
+
+  /* ---------- icons ---------- */
+  const ICON = {
+    box:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
+    db:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>',
+    dl:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+    heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    spark:'<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
+    scale:'<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+    tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+    info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    layers:'<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+    code:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+    globe:'<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+    ext:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    x:'<path d="M18 6 6 18M6 6l12 12"/>'
+  };
+  const svg = (name, w=16, h=16, extra='') => `<svg viewBox="0 0 24 24" width="${w}" height="${h}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${ICON[name]||''}</svg>`;
+
+  /* ---------- render skeleton ---------- */
+  function renderSkeleton(){
+    $('#hf-hero').innerHTML = `
+      <div class="hf-skel-row">
+        <div class="hf-skel-av"></div>
+        <div style="flex:1;min-width:240px">
+          <div class="hf-skel-line" style="width:120px;height:18px;margin-bottom:10px"></div>
+          <div class="hf-skel-line" style="width:60%;height:36px;margin-bottom:10px"></div>
+          <div class="hf-skel-line" style="width:35%;height:20px;margin-bottom:8px"></div>
+          <div class="hf-skel-line" style="width:180px;height:30px;margin-top:18px"></div>
+        </div>
+      </div>
+      <div class="hf-skel-stats">${'<div class="hf-skel-stat"></div>'.repeat(5)}</div>`;
+    $('#hf-grid').innerHTML = `<div class="hf-skel-grid">${'<div class="hf-skel-card"></div>'.repeat(6)}</div>`;
+    $('#hf-count').textContent = '…';
+    $('#hf-models-count').textContent = '…';
+    $('#hf-datasets-count').textContent = '…';
+  }
+
+  /* ---------- render hero ---------- */
+  function renderHero(user){
+    const u = user || {};
+    const totalDL = state.models.reduce((s,m)=>s+(m.downloads||0),0) + state.datasets.reduce((s,d)=>s+(d.downloads||0),0);
+    const totalLikes = state.models.reduce((s,m)=>s+(m.likes||0),0) + state.datasets.reduce((s,d)=>s+(d.likes||0),0);
+    const stats = [
+      {ic:'box', lbl:'Models', val: u.numModels!=null?u.numModels:state.models.length},
+      {ic:'db', lbl:'Datasets', val: u.numDatasets!=null?u.numDatasets:state.datasets.length},
+      {ic:'dl', lbl:'Downloads', val: fmtNum(totalDL)},
+      {ic:'heart', lbl:'Likes', val: fmtNum(totalLikes)},
+      {ic:'users', lbl:'Followers', val: fmtNum(u.numFollowers||0)}
+    ];
+    const avatar = u.avatarUrl
+      ? `<img class="hf-avatar" src="${esc(u.avatarUrl)}" alt="Rumi Iqbal Sufi avatar" />`
+      : `<div class="hf-avatar-fb">R</div>`;
+    const badges = `
+      <span class="hf-badge-user"><span class="dot"></span>@${esc(u.user||HF_USER)}</span>
+      ${u.isPro?`<span class="hf-badge-pro">PRO</span>`:''}`;
+    const since = u.createdAt ? `<span class="hf-chip-since">${svg('cal',14,14)} Member since ${fmtDate(u.createdAt)}</span>` : '';
+    $('#hf-hero').innerHTML = `
+      <div class="hf-hero-top">
+        <div class="hf-avatar-wrap">${avatar}</div>
+        <div class="hf-id-wrap">
+          <div class="hf-badges">${badges}</div>
+          <h1 class="hf-name">Rumi Iqbal Sufi</h1>
+          <p class="hf-title">AI Engineer</p>
+          <div class="hf-meta">${since}</div>
+        </div>
+      </div>
+      <div class="hf-stats">
+        ${stats.map(s=>`<div class="hf-stat"><span class="hf-stat-ic">${svg(s.ic,18,18)}</span><div><div class="hf-stat-val">${s.val}</div><div class="hf-stat-lbl">${s.lbl}</div></div></div>`).join('')}
+      </div>`;
+    $('#hf-updated').textContent = state.fetchedAt ? 'Updated ' + new Date(state.fetchedAt).toLocaleTimeString() : '';
+  }
+
+  /* ---------- normalize repos ---------- */
+  function skipTag(t){
+    return t.startsWith('arxiv:')||t.startsWith('base_model:')||t.startsWith('dataset:')
+      ||t.startsWith('task_categories:')||t.startsWith('language:')||t.startsWith('library:')
+      ||t.startsWith('modality:')||t.startsWith('format:')||t.startsWith('size_categories:')||t.startsWith('region:');
+  }
+  const NOISE = new Set(['transformers','safetensors','pytorch','gguf','region:us','endpoints_compatible','text-generation-inference','conversational','license:apache-2.0','license:mit','license:llama3.2']);
+  function normModel(m){
+    const c = m.cardData||{};
+    // Normalize base_model to always be an array (HF returns either a string
+    // or an array depending on the model).
+    const bm = c.base_model ? (Array.isArray(c.base_model)?c.base_model:[c.base_model]) : [];
+    return {
+      id:m.id, name:(m.id.split('/')[1]||m.id), author:(m.id.split('/')[0]||''),
+      url:'https://huggingface.co/'+m.id, kind:'model',
+      task:m.pipeline_tag||c.pipeline_tag, license:licenseOf(c),
+      // ALL-TIME downloads (downloadsAllTime), falling back to the 30-day
+      // `downloads` field only if the all-time value is missing.
+      // (Parentheses required: ?? cannot mix with || without them.)
+      downloads: (m.downloadsAllTime ?? m.downloads) || 0, likes:m.likes||0,
+      createdAt:m.createdAt, lastModified:m.lastModified,
+      tags:(m.tags||[]).filter(t=>!skipTag(t)&&!NOISE.has(t)).slice(0,6),
+      summary:m.summary, baseModels:bm, datasetRefs:c.datasets||[],
+      languages:c.language||[]
+    };
+  }
+  function normDataset(d){
+    const c = d.cardData||{};
+    const tc = c.task_categories&&c.task_categories[0];
+    return {
+      id:d.id, name:(d.id.split('/')[1]||d.id), author:(d.id.split('/')[0]||d.author||''),
+      url:'https://huggingface.co/datasets/'+d.id, kind:'dataset',
+      task:tc?('task_categories:'+tc):undefined, license:licenseOf(c),
+      // ALL-TIME downloads (downloadsAllTime), with a safe fallback.
+      downloads: (d.downloadsAllTime ?? d.downloads) || 0, likes:d.likes||0,
+      createdAt:d.createdAt, lastModified:d.lastModified,
+      tags:(d.tags||[]).filter(t=>!skipTag(t)&&!NOISE.has(t)).slice(0,6),
+      summary:d.summary, baseModels:[], datasetRefs:[], languages:c.language||[]
+    };
+  }
+
+  /* ---------- render grid ---------- */
+  function currentList(){
+    const list = (tab==='models'?state.models:state.datasets).slice();
+    const q = query.trim().toLowerCase();
+    let f = q ? list.filter(r=> r.name.toLowerCase().includes(q)||r.id.toLowerCase().includes(q)||(r.summary||'').toLowerCase().includes(q)||r.tags.some(t=>t.toLowerCase().includes(q))) : list;
+    f.sort((a,b)=>{
+      if(sort==='downloads') return b.downloads-a.downloads || b.likes-a.likes;
+      if(sort==='likes') return b.likes-a.likes || b.downloads-a.downloads;
+      return new Date(b.lastModified||b.createdAt).getTime()-new Date(a.lastModified||a.createdAt).getTime();
+    });
+    return f;
+  }
+  function cardHTML(r,i){
+    const isModel = r.kind==='model';
+    const task = humanTask(r.task);
+    const tags = r.tags.slice(0,5);
+    return `<article class="hf-card" style="animation-delay:${Math.min(i*40,300)}ms">
+      <a class="hf-card-link" href="${esc(r.url)}" target="_blank" rel="noopener" aria-label="Open ${esc(r.name)} on Hugging Face"></a>
+      <div class="hf-card-head">
+        <span class="hf-card-ic ${r.kind}">${svg(isModel?'box':'db',20,20)}</span>
+        <div style="min-width:0;flex:1">
+          <div class="hf-card-author">${esc(r.author)}</div>
+          <div class="hf-card-name" title="${esc(r.name)}">${esc(r.name)}</div>
+        </div>
+      </div>
+      <div class="hf-card-tags">
+        ${task?`<span class="hf-tag task">${svg('spark',12,12)}${esc(task)}</span>`:''}
+        ${r.license?`<span class="hf-tag lic">${svg('scale',12,12)}${esc(r.license)}</span>`:''}
+      </div>
+      ${r.summary?`<p class="hf-card-summary">${esc(r.summary)}</p>`:`<p class="hf-card-summary empty">No description available.</p>`}
+      ${tags.length?`<div class="hf-card-tags" style="margin-top:10px">${tags.map(t=>`<span class="hf-tag tag-sm">${svg('tag',10,10)}${esc(t)}</span>`).join('')}</div>`:''}
+      <div class="hf-card-foot">
+        <div class="hf-stats-row">
+          <span>${svg('dl',14,14)}${fmtNum(r.downloads)}</span>
+          <span>${svg('heart',14,14)}${fmtNum(r.likes)}</span>
+        </div>
+        <span class="hf-card-date">${fmtDate(r.lastModified||r.createdAt)}</span>
+      </div>
+      <div class="hf-card-actions">
+        <button class="hf-details-btn" data-details="${i}">${svg('info',14,14)} Details</button>
+        <span class="hf-open-hint">Open on Hugging Face ${svg('ext',12,12)}</span>
+      </div>
+    </article>`;
+  }
+  function renderGrid(){
+    const list = currentList();
+    $('#hf-count').textContent = String(state.models.length + state.datasets.length);
+    $('#hf-models-count').textContent = String(state.models.length);
+    $('#hf-datasets-count').textContent = String(state.datasets.length);
+    const grid = $('#hf-grid');
+    if(!list.length){
+      grid.innerHTML = `<div class="hf-empty" style="grid-column:1/-1"><div class="hf-empty-ic">${svg('spark',24,24)}</div><p style="color:rgba(255,255,255,.55);font-size:14px;margin:0">No repositories match your search.</p></div>`;
+      return;
+    }
+    grid.innerHTML = list.map((r,i)=>cardHTML(r,i)).join('');
+  }
+
+  /* ---------- details modal ---------- */
+  function openModal(repo){
+    const isModel = repo.kind==='model';
+    const task = humanTask(repo.task);
+    const card = $('#hf-modal-card');
+    const allTags = repo.tags;
+    card.innerHTML = `
+      <button class="hf-modal-x" id="hf-modal-x" aria-label="Close details">${svg('x',18,18)}</button>
+      <div class="hf-modal-head">
+        <div class="hf-modal-head-top">
+          <span class="hf-modal-ic ${repo.kind}">${svg(isModel?'box':'db',24,24)}</span>
+          <div class="hf-modal-idwrap">
+            <h3 class="hf-modal-title" id="hf-modal-title">${esc(repo.name)}</h3>
+            <div class="hf-modal-id">${esc(repo.id)}</div>
+          </div>
+          <span class="hf-modal-kind ${repo.kind}">${isModel?'Model':'Dataset'}</span>
+        </div>
+        <div class="hf-modal-badges">
+          ${task?`<span class="hf-tag task">${svg('spark',12,12)}${esc(task)}</span>`:''}
+          ${repo.license?`<span class="hf-tag lic">${svg('scale',12,12)}${esc(repo.license)}</span>`:''}
+        </div>
+      </div>
+      <div class="hf-modal-body">
+        <div class="hf-modal-stats">
+          <div class="hf-modal-stat"><div class="hf-modal-stat-ic">${svg('dl',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.downloads)}</div><div class="hf-modal-stat-lbl">Downloads</div></div>
+          <div class="hf-modal-stat"><div class="hf-modal-stat-ic" style="color:#fb7185">${svg('heart',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.likes)}</div><div class="hf-modal-stat-lbl">Likes</div></div>
+          <div class="hf-modal-stat"><div class="hf-modal-stat-ic">${svg('cal',18,18)}</div><div class="hf-modal-stat-val" style="font-size:14px">${fmtDate(repo.createdAt)}</div><div class="hf-modal-stat-lbl">Created</div></div>
+          <div class="hf-modal-stat"><div class="hf-modal-stat-ic" style="color:#5eead4">${svg('cal',18,18)}</div><div class="hf-modal-stat-val" style="font-size:14px">${fmtDate(repo.lastModified||repo.createdAt)}</div><div class="hf-modal-stat-lbl">Updated</div></div>
+        </div>
+        ${repo.summary?`<div class="hf-modal-section"><h4 class="hf-modal-h4">${svg('spark',14,14)} Overview</h4><p class="hf-modal-p">${esc(repo.summary)}</p></div>`:''}
+        <div class="hf-modal-meta">
+          ${isModel&&repo.baseModels.length?`<div class="hf-modal-metarow"><span class="hf-modal-meta-ic">${svg('layers',14,14)}</span><div><div class="hf-modal-meta-lbl">Base Model</div><div class="hf-modal-meta-val" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#5eead4">${esc(repo.baseModels.join(', '))}</div></div></div>`:''}
+          ${repo.datasetRefs.length?`<div class="hf-modal-metarow"><span class="hf-modal-meta-ic">${svg('db',14,14)}</span><div><div class="hf-modal-meta-lbl">Datasets Used</div><div class="hf-modal-meta-val">${repo.datasetRefs.map(d=>`<a class="hf-modal-dsref" href="https://huggingface.co/datasets/${esc(d)}" target="_blank" rel="noopener">${esc(d)} ${svg('ext',10,10)}</a>`).join('')}</div></div></div>`:''}
+          ${repo.languages.length?`<div class="hf-modal-metarow"><span class="hf-modal-meta-ic">${svg('globe',14,14)}</span><div><div class="hf-modal-meta-lbl">Languages</div><div class="hf-modal-meta-val">${esc(repo.languages.join(', '))}</div></div></div>`:''}
+          <div class="hf-modal-metarow"><span class="hf-modal-meta-ic">${svg('code',14,14)}</span><div><div class="hf-modal-meta-lbl">Repository ID</div><div class="hf-modal-meta-val" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.7)">${esc(repo.id)}</div></div></div>
+        </div>
+        ${allTags.length?`<div class="hf-modal-section"><h4 class="hf-modal-h4">${svg('tag',14,14)} All Tags</h4></div><div class="hf-modal-taggrid">${allTags.map(t=>`<span class="hf-modal-tag">${esc(t)}</span>`).join('')}</div>`:''}
+      </div>
+      <div class="hf-modal-foot">
+        <a class="hf-modal-openbtn" href="${esc(repo.url)}" target="_blank" rel="noopener">Open on Hugging Face ${svg('ext',16,16)}</a>
+      </div>`;
+    $('#hf-modal').hidden = false;
+    $('#hf-modal-x').onclick = closeModal;
+  }
+  function closeModal(){ $('#hf-modal').hidden = true; }
+
+  /* ---------- error ---------- */
+  function renderError(msg){
+    $('#hf-hero').innerHTML = `<div class="hf-error"><div class="hf-error-ic">${svg('alert',26,26)}</div><h3>Couldn't load the profile</h3><p>${esc(msg)}</p><button class="hf-retry" id="hf-retry">${svg('refresh',16,16)} Retry</button></div>`;
+    $('#hf-grid').innerHTML = '';
+    $('#hf-retry').onclick = load;
+  }
+
+  /* ---------- load ---------- */
+  async function load(){
+    if(state.loading) return;
+    state.loading = true;
+    renderSkeleton();
+    try{
+      // Using expand[]= REPLACES the default response fields, so we explicitly
+      // request every field we use: all-time downloads (downloadsAllTime),
+      // plus metadata (cardData, createdAt, lastModified, tags, ...) so even
+      // gated repos get their license/base_model/tags without a separate call.
+      const [user, models, datasets] = await Promise.all([
+        fetchJSON(`${HF_API}/users/${HF_USER}/overview`),
+        fetchJSON(`${HF_API}/models?author=${HF_USER}&full=true&limit=100&expand[]=downloads&expand[]=downloadsAllTime&expand[]=likes&expand[]=createdAt&expand[]=lastModified&expand[]=cardData&expand[]=tags&expand[]=pipeline_tag&expand[]=library_name`),
+        fetchJSON(`${HF_API}/datasets?author=${HF_USER}&full=true&limit=100&expand[]=downloads&expand[]=downloadsAllTime&expand[]=likes&expand[]=createdAt&expand[]=lastModified&expand[]=cardData&expand[]=tags`)
+      ]);
+      if(!models && !datasets && !user) throw new Error('Hugging Face API is unreachable.');
+      // Normalize BEFORE sorting/summing so the all-time count is used everywhere.
+      state.models = (models||[]).map(m=>normModel(m));
+      state.datasets = (datasets||[]).map(d=>normDataset(d));
+      state.user = user;
+      state.models.sort((a,b)=>(b.downloads||0)-(a.downloads||0)||(b.likes||0)-(a.likes||0));
+      state.datasets.sort((a,b)=>(b.downloads||0)-(a.downloads||0)||(b.likes||0)-(a.likes||0));
+      // README summaries (best-effort, capped concurrency).
+      // For gated/restricted repos where the README returns 401, fall back to
+      // the per-repo API's cardData (YAML frontmatter) and synthesize a
+      // description from the metadata.
+      const repos = [...state.models.map(m=>({id:m.id,t:'m'})), ...state.datasets.map(d=>({id:d.id,t:'d'}))];
+      await runPool(repos, 6, async r=>{
+        const txt = await fetchReadme(r.id);
+        let sum = extractSummary(txt);
+        if(r.t==='m'){
+          const m=state.models.find(x=>x.id===r.id);
+          if(m){
+            if(!sum){
+              // Gated/restricted repo: fetch cardData and synthesize a fallback.
+              const cd = m.cardData || await fetchModelCardData(r.id);
+              if(cd) m.cardData = m.cardData || cd;
+              sum = describeFromCardData(cd, m.name);
+            }
+            m.summary = sum;
+          }
+        } else {
+          const d=state.datasets.find(x=>x.id===r.id);
+          if(d) d.summary = sum || extractSummary(d.description);
+        }
+      });
+      state.fetchedAt = new Date().toISOString();
+      state.loaded = true;
+      renderHero(user);
+      renderGrid();
+    }catch(e){
+      renderError(e&&e.message||'Unknown error');
+    }finally{
+      state.loading = false;
+    }
+  }
+  function runPool(items, n, fn){
+    let i=0; const workers=[]; const next=async()=>{ while(i<items.length){ const it=items[i++]; await fn(it); } };
+    for(let k=0;k<n;k++) workers.push(next());
+    return Promise.all(workers);
+  }
+
+  /* ---------- events ---------- */
+  function setActiveTab(t){
+    tab = t;
+    $$('.hf-tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+    renderGrid();
+  }
+  function bind(){
+    $('#hf-close').onclick = closeOverlay;
+    $$('.hf-tab').forEach(b=>b.onclick=()=>setActiveTab(b.dataset.tab));
+    $('#hf-search').oninput = e=>{ query=e.target.value; renderGrid(); };
+    $('#hf-sort').onchange = e=>{ sort=e.target.value; renderGrid(); };
+    $('#hf-grid').addEventListener('click', e=>{
+      const btn = e.target.closest('[data-details]');
+      if(!btn) return;
+      e.preventDefault(); e.stopPropagation();
+      const idx = +btn.dataset.details;
+      const list = currentList();
+      const repo = list[idx];
+      if(repo) openModal(repo);
+    });
+    $('#hf-modal-bg').onclick = closeModal;
+    // Wire the portfolio's Hugging Face buttons to open this overlay.
+    ['hf-open-btn','hf-open-btn-m'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener('click', openOverlay);
+    });
+    document.addEventListener('keydown', e=>{
+      if(e.key==='Escape'){
+        if(!$('#hf-modal').hidden){ closeModal(); }
+        else if(!overlay.hidden){ closeOverlay(); }
+      }
+    });
+  }
+
+  /* ---------- open / close overlay ---------- */
+  function openOverlay(){
+    overlay.hidden = false;
+    document.body.classList.add('hf-open');
+    if(!state.loaded && !state.loading) load();
+  }
+  function closeOverlay(){
+    overlay.hidden = true;
+    document.body.classList.remove('hf-open');
+  }
+  // expose openers
+  window.__openHF = openOverlay;
+
+  bind();
+  // initial active tab
+  setActiveTab('models');
+})();
 </script>
 </body>
 </html>
