@@ -234,6 +234,7 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
   const fmtNum = n => n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'')+'M'
                     : n>=1e3 ? (n/1e3).toFixed(1).replace(/\.0$/,'')+'k'
                     : String(n);
+  const fmtFull = n => (n||0).toLocaleString('en-US');
   const fmtDate = iso => { if(!iso) return '—'; const d=new Date(iso); return isNaN(d)? iso.slice(0,10)
       : d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}); };
   const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -293,6 +294,62 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
     try{ const r=await fetch(`https://huggingface.co/api/models/${repoId}?expand[]=cardData`,{signal:c.signal,headers:{Accept:'application/json'}}); if(!r.ok) return null; const d=await r.json(); return d.cardData||null; }
     catch(_){ return null; } finally{ clearTimeout(tm); }
   }
+  // ------------------------------------------------------------------
+  // DOWNLOAD METRIC — all-time only (downloadsAllTime).
+  // The 30-day `downloads` field is NEVER substituted for all-time.
+  // ------------------------------------------------------------------
+  const allTime = x => (typeof x.downloadsAllTime === 'number' ? x.downloadsAllTime : 0);
+
+  // ------------------------------------------------------------------
+  // GGUF DETECTION — file-level evidence.
+  //   Primary:   actual repository filenames ending in .gguf (siblings).
+  //   Secondary: the Hub's dedicated GGUF metadata, only when file
+  //              information is unavailable.
+  //   Tags and repository names are NOT treated as proof of GGUF.
+  // ------------------------------------------------------------------
+  function ggufStatus(info){
+    const sib = info && info.siblings;
+    if(Array.isArray(sib) && sib.length){
+      const files = sib.map(s => s && typeof s === 'object' ? (s.rfilename||'') : String(s||'')).filter(Boolean);
+      const ggufFiles = files.filter(f => f.toLowerCase().endsWith('.gguf'));
+      if(ggufFiles.length) return {isGGUF:true, evidence:'files', count:ggufFiles.length};
+      // Sibling information is present -> authoritative file-level result.
+      return {isGGUF:false, evidence:'files', count:0};
+    }
+    // Secondary metadata fallback only when file information is unavailable.
+    if(info && info.gguf) return {isGGUF:true, evidence:'metadata', count:0};
+    return {isGGUF:false, evidence:'none', count:0};
+  }
+
+  // ------------------------------------------------------------------
+  // COMMUNITY QUANTIZATION DISCOVERY.
+  // `filter=base_model:quantized:<repo_id>` returns every public repo
+  // whose model card declares a *quantized* relationship to the model —
+  // this is the correct relation for community quants (mradermacher,
+  // bartowski, unsloth, …). Plain fine-tunes that do not declare a
+  // quantized relation are NOT ecosystem quants and are excluded.
+  // Own-account quantizations are excluded as well: they are already
+  // part of the direct model download total. Repos not declaring a
+  // base_model relationship cannot be discovered this way (accepted
+  // limitation of the relationship-based method).
+  // ------------------------------------------------------------------
+  async function fetchQuantizations(repoId, ms=9000){
+    const filterVal = 'base_model:quantized:' + repoId.split('/').map(encodeURIComponent).join('%2F');
+    const list = await fetchJSON(`${HF_API}/models?filter=${filterVal}&limit=100&expand[]=downloads&expand[]=downloadsAllTime&expand[]=likes&expand[]=lastModified&expand[]=siblings&expand[]=gguf`, ms);
+    if(!Array.isArray(list)) return null; // lookup failed -> model stays direct-only
+    return list
+      .filter(x => x && x.id && (x.id.split('/')[0]||'').toLowerCase() !== HF_USER.toLowerCase())
+      .map(x => {
+        const g = ggufStatus(x);
+        return {
+          id:x.id, name:(x.id.split('/')[1]||x.id), author:(x.id.split('/')[0]||''),
+          url:'https://huggingface.co/'+x.id,
+          isGGUF:g.isGGUF, ggufEvidence:g.evidence, ggufFiles:g.count,
+          downloads:allTime(x), likes:x.likes||0, lastModified:x.lastModified
+        };
+      })
+      .sort((a,b)=>b.downloads-a.downloads);
+  }
   const TASK_LABELS2 = {'text-generation':'Text Generation','text-classification':'Text Classification','fill-mask':'Fill-Mask','token-classification':'Token Classification','question-answering':'Question Answering','image-classification':'Image Classification','automatic-speech-recognition':'Speech Recognition','summarization':'Summarization','translation':'Translation'};
   function humanTaskLabel2(task){ return TASK_LABELS2[task] || task.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase()); }
   // Build a meaningful description from cardData when no README is available.
@@ -312,7 +369,7 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
   }
 
   /* ---------- state ---------- */
-  let state = { user:null, models:[], datasets:[], fetchedAt:null, loaded:false, loading:false };
+  let state = { user:null, models:[], datasets:[], eco:null, fetchedAt:null, loaded:false, loading:false };
   let tab = 'models', query='', sort='downloads';
 
   /* ---------- DOM build ---------- */
@@ -342,7 +399,7 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
         <section class="hf-repos">
           <div class="hf-repos-head">
             <h2 class="hf-repos-title">Public Repositories <span class="hf-count-pill" id="hf-count">0</span></h2>
-            <p class="hf-repos-sub">Live from Hugging Face — every entry is fetched in real time.</p>
+            <p class="hf-repos-sub">Live from Hugging Face — all-time download totals include community quantizations of each model, deduplicated across the profile.</p>
           </div>
 
           <div class="hf-controls">
@@ -380,7 +437,10 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
             <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="color:#fbbf24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             Profile data fetched live from <a href="${PROFILE_URL}" target="_blank" rel="noopener" class="hf-link">huggingface.co</a>
           </span>
-          <span class="hf-footer-right" id="hf-updated"></span>
+          <span class="hf-footer-rightgroup">
+            <span class="hf-footer-right" id="hf-updated"></span>
+            <button class="hf-refresh" id="hf-refresh" aria-label="Refresh Hugging Face data" title="Refresh data"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+          </span>
         </footer>
       </div>
     </div>
@@ -450,8 +510,7 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
   background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);padding:6px 12px;border-radius:10px;font-size:12px}
 #hf-overlay .hf-chip-since svg{color:#fbbf24}
 #hf-overlay .hf-stats{margin-top:28px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-@media(min-width:640px){#hf-overlay .hf-stats{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:1024px){#hf-overlay .hf-stats{grid-template-columns:repeat(5,1fr)}}
+@media(min-width:640px){#hf-overlay .hf-stats{grid-template-columns:repeat(4,1fr)}}
 #hf-overlay .hf-stat{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;
   background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
   border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(18px) saturate(140%);
@@ -541,9 +600,11 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-skel-row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
 #hf-overlay .hf-skel-av{width:112px;height:112px;border-radius:18px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
 #hf-overlay .hf-skel-line{height:12px;border-radius:6px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
-#hf-overlay .hf-skel-stats{margin-top:28px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-@media(max-width:1024px){#hf-overlay .hf-skel-stats{grid-template-columns:repeat(3,1fr)}}
+#hf-overlay .hf-skel-stats{margin-top:28px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media(max-width:640px){#hf-overlay .hf-skel-stats{grid-template-columns:repeat(2,1fr)}}
+#hf-overlay .hf-skel-dlband{margin-top:12px;border-radius:18px;padding:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+#hf-overlay .hf-skel-dlrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+#hf-overlay .hf-skel-dltile{height:70px;border-radius:14px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
 #hf-overlay .hf-skel-stat{height:62px;border-radius:14px;background:rgba(255,255,255,.08);animation:hf-pulse 1.4s ease-in-out infinite}
 #hf-overlay .hf-skel-grid{margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 @media(max-width:1024px){#hf-overlay .hf-skel-grid{grid-template-columns:repeat(2,1fr)}}
@@ -558,6 +619,12 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-link{color:#fbbf24;font-weight:500;text-decoration:none}
 #hf-overlay .hf-link:hover{text-decoration:underline}
 #hf-overlay .hf-footer-right{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.45)}
+#hf-overlay .hf-footer-rightgroup{display:inline-flex;align-items:center;gap:8px}
+#hf-overlay .hf-refresh{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.65);cursor:pointer;transition:all .2s}
+#hf-overlay .hf-refresh:hover{background:rgba(251,191,36,.15);border-color:rgba(251,191,36,.45);color:#fde68a}
+#hf-overlay .hf-refresh.spin svg{animation:hf-rot 1s linear infinite}
+@keyframes hf-rot{to{transform:rotate(360deg)}}
 
 /* OPAQUE modal — background never shows through */
 #hf-overlay .hf-modal{position:fixed;inset:0;z-index:210;display:none}
@@ -586,7 +653,8 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-modal-body::-webkit-scrollbar{width:8px}
 #hf-overlay .hf-modal-body::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(251,191,36,.45),rgba(245,158,11,.35));border-radius:9999px}
 #hf-overlay .hf-modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 0}
-@media(max-width:560px){#hf-overlay .hf-modal-stats{grid-template-columns:repeat(2,1fr)}}
+#hf-overlay .hf-modal-stats.cols3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:560px){#hf-overlay .hf-modal-stats,#hf-overlay .hf-modal-stats.cols3{grid-template-columns:repeat(2,1fr)}}
 #hf-overlay .hf-modal-stat{text-align:center;padding:12px;border-radius:12px;background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.1)}
 #hf-overlay .hf-modal-stat-ic{margin:0 auto 4px;color:#fbbf24}
 #hf-overlay .hf-modal-stat-val{font-size:18px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
@@ -617,6 +685,93 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-error p{color:rgba(255,255,255,.6);font-size:14px;margin:0 0 20px}
 #hf-overlay .hf-retry{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:11px;border:none;background:#fbbf24;color:#0f172a;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px}
 #hf-overlay .hf-retry:hover{background:#f59e0b}
+/* ---- Download impact band (hero) ---- */
+#hf-overlay .hf-dlband{margin-top:14px;border-radius:18px;padding:18px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,rgba(251,191,36,.10),rgba(45,212,191,.05));
+  border:1px solid rgba(251,191,36,.22);backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+#hf-overlay .hf-dlband-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+#hf-overlay .hf-dlband-title{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#fde68a}
+#hf-overlay .hf-dlband-title svg{color:#fbbf24}
+#hf-overlay .hf-dlband-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(45,212,191,.3);background:rgba(45,212,191,.1);
+  color:#5eead4;padding:4px 11px;border-radius:9999px;font-size:11.5px;font-weight:500}
+#hf-overlay .hf-dlband-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+#hf-overlay .hf-dl-tile{text-align:center;padding:14px 8px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);min-width:0}
+#hf-overlay .hf-dl-v{font-size:clamp(19px,2.4vw,27px);font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1.15}
+#hf-overlay .hf-dl-tile.t-total .hf-dl-v{background:linear-gradient(135deg,#fde68a,#fbbf24 55%,#f59e0b);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+#hf-overlay .hf-dl-tile.t-eco .hf-dl-v{color:#5eead4}
+#hf-overlay .hf-dl-l{margin-top:5px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:rgba(255,255,255,.55);line-height:1.5;overflow-wrap:break-word}
+#hf-overlay .hf-dl-splitbar{display:flex;height:8px;border-radius:9999px;overflow:hidden;margin-top:14px;background:rgba(255,255,255,.06);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+#hf-overlay .hf-dl-splitbar i{display:block;height:100%}
+#hf-overlay .hf-dl-splitbar i.d{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+#hf-overlay .hf-dl-splitbar i.e{background:linear-gradient(90deg,#14b8a6,#2dd4bf)}
+#hf-overlay .hf-dl-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:12px;color:rgba(255,255,255,.62)}
+#hf-overlay .hf-dl-legend b{color:#fff;font-weight:600}
+#hf-overlay .hf-dl-sub{color:rgba(255,255,255,.45);font-size:11px}
+
+/* ---- Milestone (model ecosystem) ---- */
+#hf-overlay .hf-ms{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:9px 12px;border-radius:11px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);font-size:12px;color:rgba(255,255,255,.6)}
+#hf-overlay .hf-ms-ic{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;
+  background:rgba(255,255,255,.06);color:rgba(255,255,255,.55);flex:0 0 auto}
+#hf-overlay .hf-ms.done{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.08)}
+#hf-overlay .hf-ms.done .hf-ms-ic{background:rgba(251,191,36,.18);color:#fcd34d}
+#hf-overlay .hf-ms-lbl{font-weight:600;color:rgba(255,255,255,.78);white-space:nowrap}
+#hf-overlay .hf-ms-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;background:linear-gradient(135deg,#fde68a,#fbbf24);color:#0f172a}
+#hf-overlay .hf-ms-track{flex:1 1 90px;min-width:70px;height:6px;border-radius:9999px;overflow:hidden;background:rgba(255,255,255,.08)}
+#hf-overlay .hf-ms-track i{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+#hf-overlay .hf-ms-val{font-variant-numeric:tabular-nums;color:rgba(255,255,255,.75);white-space:nowrap}
+#hf-overlay .hf-ms.done .hf-ms-val{color:#fde68a}
+#hf-overlay .hf-dl-legend .dot,#hf-overlay .hf-modal-dllegend .dot{display:inline-block;width:8px;height:8px;border-radius:9999px;margin-right:6px}
+#hf-overlay .hf-dl-legend .dot.d,#hf-overlay .hf-modal-dllegend .dot.d{background:#fbbf24}
+#hf-overlay .hf-dl-legend .dot.e,#hf-overlay .hf-modal-dllegend .dot.e{background:#2dd4bf}
+
+/* ---- Card download block ---- */
+#hf-overlay .hf-card-dl{position:relative;z-index:1;margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+#hf-overlay .hf-dl-total{display:flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,.85);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+#hf-overlay .hf-dl-total svg{color:#fbbf24;flex:0 0 auto}
+#hf-overlay .hf-dl-total b{font-size:15px;color:#fcd34d;font-weight:600}
+#hf-overlay .hf-dl-total>span{color:rgba(255,255,255,.5);font-size:11px}
+#hf-overlay .hf-dl-parts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#hf-overlay .hf-part{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:7px;font-variant-numeric:tabular-nums;font-weight:500}
+#hf-overlay .hf-part.d{border:1px solid rgba(251,191,36,.25);background:rgba(251,191,36,.08);color:#fde68a}
+#hf-overlay .hf-part.e{border:1px solid rgba(45,212,191,.25);background:rgba(45,212,191,.08);color:#5eead4}
+#hf-overlay .hf-mini-split{display:flex;height:4px;border-radius:9999px;overflow:hidden;margin-top:8px;background:rgba(255,255,255,.06)}
+#hf-overlay .hf-mini-split i{display:block;height:100%}
+#hf-overlay .hf-mini-split i.d{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+#hf-overlay .hf-mini-split i.e{background:linear-gradient(90deg,#14b8a6,#2dd4bf)}
+#hf-overlay .hf-tag.eco{border:1px solid rgba(45,212,191,.25);background:rgba(45,212,191,.1);color:#5eead4}
+#hf-overlay .hf-tag.eco svg{color:#2dd4bf}
+
+/* ---- Modal breakdown & community ecosystem ---- */
+#hf-overlay .hf-modal-stat.t-total .hf-modal-stat-val{color:#fde68a}
+#hf-overlay .hf-modal-stat.t-eco .hf-modal-stat-val{color:#5eead4}
+#hf-overlay .hf-modal-h4-sub{margin-left:auto;font-size:11px;font-weight:500;color:rgba(255,255,255,.5);text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
+#hf-overlay .hf-modal-dlbar{display:flex;height:10px;border-radius:9999px;overflow:hidden;background:rgba(255,255,255,.06);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+#hf-overlay .hf-modal-dlbar i{display:block;height:100%}
+#hf-overlay .hf-modal-dlbar i.d{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+#hf-overlay .hf-modal-dlbar i.e{background:linear-gradient(90deg,#14b8a6,#2dd4bf)}
+#hf-overlay .hf-modal-dllegend{display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:12.5px;color:rgba(255,255,255,.65);line-height:1.5}
+#hf-overlay .hf-modal-dllegend b{color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+#hf-overlay .hf-modal-eco-note{font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.55);margin:0 0 10px}
+#hf-overlay .hf-modal-eco-note b{color:rgba(255,255,255,.85);font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11.5px}
+#hf-overlay .hf-deriv-list{display:flex;flex-direction:column;gap:8px;max-height:384px;overflow-y:auto;padding-right:6px;scrollbar-width:thin;scrollbar-color:rgba(251,191,36,.5) transparent}
+#hf-overlay .hf-deriv-list::-webkit-scrollbar{width:8px}
+#hf-overlay .hf-deriv-list::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(251,191,36,.45),rgba(245,158,11,.35));border-radius:9999px}
+#hf-overlay .hf-deriv-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;text-decoration:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);transition:all .2s}
+#hf-overlay .hf-deriv-row:hover{border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.07);transform:translateX(3px)}
+#hf-overlay .hf-deriv-ic{flex:0 0 auto;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+#hf-overlay .hf-deriv-ic.gguf{background:rgba(251,191,36,.14);color:#fcd34d}
+#hf-overlay .hf-deriv-ic.other{background:rgba(45,212,191,.14);color:#5eead4}
+#hf-overlay .hf-deriv-id{flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hf-overlay .hf-deriv-type{flex:0 0 auto;font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:9999px;font-weight:500}
+#hf-overlay .hf-deriv-type.gguf{border:1px solid rgba(251,191,36,.3);background:rgba(251,191,36,.1);color:#fde68a}
+#hf-overlay .hf-deriv-type.other{border:1px solid rgba(45,212,191,.3);background:rgba(45,212,191,.1);color:#99f6e4}
+#hf-overlay .hf-deriv-dl{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:12px;color:rgba(255,255,255,.75);font-variant-numeric:tabular-nums}
+@media(max-width:520px){#hf-overlay .hf-deriv-type{display:none}}
+
 body.hf-open{overflow:hidden}
 `;
   document.head.appendChild(style);
@@ -640,6 +795,7 @@ body.hf-open{overflow:hidden}
     alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
     refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
     clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
     x:'<path d="M18 6 6 18M6 6l12 12"/>'
   };
   const svg = (name, w=16, h=16, extra='') => `<svg viewBox="0 0 24 24" width="${w}" height="${h}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${ICON[name]||''}</svg>`;
@@ -656,7 +812,11 @@ body.hf-open{overflow:hidden}
           <div class="hf-skel-line" style="width:180px;height:30px;margin-top:18px"></div>
         </div>
       </div>
-      <div class="hf-skel-stats">${'<div class="hf-skel-stat"></div>'.repeat(5)}</div>`;
+      <div class="hf-skel-stats">${'<div class="hf-skel-stat"></div>'.repeat(4)}</div>
+      <div class="hf-skel-dlband">
+        <div class="hf-skel-line" style="width:160px;height:14px;margin-bottom:16px"></div>
+        <div class="hf-skel-dlrow">${'<div class="hf-skel-dltile"></div>'.repeat(3)}</div>
+      </div>`;
     $('#hf-grid').innerHTML = `<div class="hf-skel-grid">${'<div class="hf-skel-card"></div>'.repeat(6)}</div>`;
     $('#hf-count').textContent = '…';
     $('#hf-models-count').textContent = '…';
@@ -664,14 +824,24 @@ body.hf-open{overflow:hidden}
   }
 
   /* ---------- render hero ---------- */
+  const MILESTONE_TARGET = 50000; // model ecosystem milestone (direct models + community quants)
   function renderHero(user){
     const u = user || {};
-    const totalDL = state.models.reduce((s,m)=>s+(m.downloads||0),0) + state.datasets.reduce((s,d)=>s+(d.downloads||0),0);
+    const eco = state.eco || {communityTotal:0, communityGGUFTotal:0, communityOtherTotal:0, communityGGUFRepos:0, uniqueRepos:0, duplicateAssociations:0};
+    const directModelsDL = state.models.reduce((s,m)=>s+(m.downloads||0),0);
+    const directDatasetsDL = state.datasets.reduce((s,d)=>s+(d.downloads||0),0);
+    const directDL = directModelsDL + directDatasetsDL;
+    const ecoDL = eco.communityTotal;                 // unique community quant repos, deduplicated
+    const totalDL = directDL + ecoDL;                  // total incl. datasets + community quants
+    const modelEcoDL = directModelsDL + ecoDL;         // model ecosystem (milestone metric)
     const totalLikes = state.models.reduce((s,m)=>s+(m.likes||0),0) + state.datasets.reduce((s,d)=>s+(d.likes||0),0);
+    const dPct = totalDL ? Math.round(directDL/totalDL*100) : 100;
+    const ePct = 100 - dPct;
+    const msReached = modelEcoDL >= MILESTONE_TARGET;
+    const msPct = Math.min(100, Math.round(modelEcoDL/MILESTONE_TARGET*100));
     const stats = [
       {ic:'box', lbl:'Models', val: u.numModels!=null?u.numModels:state.models.length},
       {ic:'db', lbl:'Datasets', val: u.numDatasets!=null?u.numDatasets:state.datasets.length},
-      {ic:'dl', lbl:'Downloads', val: fmtNum(totalDL)},
       {ic:'heart', lbl:'Likes', val: fmtNum(totalLikes)},
       {ic:'users', lbl:'Followers', val: fmtNum(u.numFollowers||0)}
     ];
@@ -694,6 +864,31 @@ body.hf-open{overflow:hidden}
       </div>
       <div class="hf-stats">
         ${stats.map(s=>`<div class="hf-stat"><span class="hf-stat-ic">${svg(s.ic,18,18)}</span><div><div class="hf-stat-val">${s.val}</div><div class="hf-stat-lbl">${s.lbl}</div></div></div>`).join('')}
+      </div>
+      <div class="hf-dlband" role="group" aria-label="Download impact breakdown">
+        <div class="hf-dlband-head">
+          <span class="hf-dlband-title">${svg('dl',15,15)} Download Impact</span>
+          <span class="hf-dlband-pill" title="Unique community quantization repositories (each counted once)">${svg('layers',12,12)} ${eco.uniqueRepos} community quant${eco.uniqueRepos===1?'':'s'}</span>
+        </div>
+        <div class="hf-dlband-grid">
+          <div class="hf-dl-tile t-total"><div class="hf-dl-v">${fmtFull(totalDL)}</div><div class="hf-dl-l">Total Downloads</div></div>
+          <div class="hf-dl-tile t-direct"><div class="hf-dl-v">${fmtFull(directDL)}</div><div class="hf-dl-l">Direct · My Repos</div></div>
+          <div class="hf-dl-tile t-eco"><div class="hf-dl-v">${fmtFull(ecoDL)}</div><div class="hf-dl-l">Ecosystem · Community Quants</div></div>
+        </div>
+        <div class="hf-dl-splitbar" role="img" aria-label="${dPct}% direct downloads, ${ePct}% ecosystem downloads">
+          <i class="d" style="width:${dPct}%"></i><i class="e" style="width:${ePct}%"></i>
+        </div>
+        <div class="hf-dl-legend">
+          <span><i class="dot d" aria-hidden="true"></i><b>Direct</b>&nbsp;— all-time downloads from my own models &amp; datasets · ${fmtFull(directDL)} (${dPct}%)</span>
+          <span><i class="dot e" aria-hidden="true"></i><b>Ecosystem</b>&nbsp;— community quantizations of my models · ${fmtFull(ecoDL)} (${ePct}%)${eco.communityOtherTotal>0?` <span class="hf-dl-sub">(GGUF ${fmtFull(eco.communityGGUFTotal)} · other formats ${fmtFull(eco.communityOtherTotal)})</span>`:''}</span>
+        </div>
+        <div class="hf-ms ${msReached?'done':''}">
+          <span class="hf-ms-ic">${svg('trophy',14,14)}</span>
+          <span class="hf-ms-lbl">${fmtNum(MILESTONE_TARGET)} Model Ecosystem Milestone</span>
+          ${msReached
+            ? `<span class="hf-ms-badge">REACHED</span><span class="hf-ms-val">${fmtFull(modelEcoDL)} / ${fmtFull(MILESTONE_TARGET)}</span>`
+            : `<span class="hf-ms-track" role="img" aria-label="${msPct}% of milestone"><i style="width:${msPct}%"></i></span><span class="hf-ms-val">${fmtFull(modelEcoDL)} / ${fmtFull(MILESTONE_TARGET)} · ${fmtFull(MILESTONE_TARGET-modelEcoDL)} to go</span>`}
+        </div>
       </div>`;
     $('#hf-updated').textContent = state.fetchedAt ? 'Updated ' + new Date(state.fetchedAt).toLocaleTimeString() : '';
   }
@@ -710,14 +905,18 @@ body.hf-open{overflow:hidden}
     // Normalize base_model to always be an array (HF returns either a string
     // or an array depending on the model).
     const bm = c.base_model ? (Array.isArray(c.base_model)?c.base_model:[c.base_model]) : [];
+    // ALL-TIME downloads only — the 30-day metric is never substituted.
+    const dl = allTime(m);
     return {
       id:m.id, name:(m.id.split('/')[1]||m.id), author:(m.id.split('/')[0]||''),
       url:'https://huggingface.co/'+m.id, kind:'model',
       task:m.pipeline_tag||c.pipeline_tag, license:licenseOf(c),
-      // ALL-TIME downloads (downloadsAllTime), falling back to the 30-day
-      // `downloads` field only if the all-time value is missing.
-      // (Parentheses required: ?? cannot mix with || without them.)
-      downloads: (m.downloadsAllTime ?? m.downloads) || 0, likes:m.likes||0,
+      downloads: dl, likes:m.likes||0,
+      // Community quantization numbers (linked, per model). Filled in by the
+      // ecosystem pass in load(); totalDownloads starts as the direct count
+      // and grows once community quants are discovered.
+      quantCount:0, quantDownloads:0,
+      totalDownloads: dl, quants:[],
       createdAt:m.createdAt, lastModified:m.lastModified,
       tags:(m.tags||[]).filter(t=>!skipTag(t)&&!NOISE.has(t)).slice(0,6),
       summary:m.summary, baseModels:bm, datasetRefs:c.datasets||[],
@@ -727,12 +926,16 @@ body.hf-open{overflow:hidden}
   function normDataset(d){
     const c = d.cardData||{};
     const tc = c.task_categories&&c.task_categories[0];
+    // ALL-TIME downloads only — the 30-day metric is never substituted.
+    const dl = allTime(d);
     return {
       id:d.id, name:(d.id.split('/')[1]||d.id), author:(d.id.split('/')[0]||d.author||''),
       url:'https://huggingface.co/datasets/'+d.id, kind:'dataset',
       task:tc?('task_categories:'+tc):undefined, license:licenseOf(c),
-      // ALL-TIME downloads (downloadsAllTime), with a safe fallback.
-      downloads: (d.downloadsAllTime ?? d.downloads) || 0, likes:d.likes||0,
+      downloads: dl, likes:d.likes||0,
+      // Datasets have no quantizations — ecosystem stays empty, total == direct.
+      quantCount:0, quantDownloads:0,
+      totalDownloads: dl, quants:[],
       createdAt:d.createdAt, lastModified:d.lastModified,
       tags:(d.tags||[]).filter(t=>!skipTag(t)&&!NOISE.has(t)).slice(0,6),
       summary:d.summary, baseModels:[], datasetRefs:[], languages:c.language||[]
@@ -745,8 +948,8 @@ body.hf-open{overflow:hidden}
     const q = query.trim().toLowerCase();
     let f = q ? list.filter(r=> r.name.toLowerCase().includes(q)||r.id.toLowerCase().includes(q)||(r.summary||'').toLowerCase().includes(q)||r.tags.some(t=>t.toLowerCase().includes(q))) : list;
     f.sort((a,b)=>{
-      if(sort==='downloads') return b.downloads-a.downloads || b.likes-a.likes;
-      if(sort==='likes') return b.likes-a.likes || b.downloads-a.downloads;
+      if(sort==='downloads') return (b.totalDownloads||0)-(a.totalDownloads||0) || b.likes-a.likes;
+      if(sort==='likes') return b.likes-a.likes || (b.totalDownloads||0)-(a.totalDownloads||0);
       return new Date(b.lastModified||b.createdAt).getTime()-new Date(a.lastModified||a.createdAt).getTime();
     });
     return f;
@@ -755,6 +958,8 @@ body.hf-open{overflow:hidden}
     const isModel = r.kind==='model';
     const task = humanTask(r.task);
     const tags = r.tags.slice(0,5);
+    const hasEco = (r.quantDownloads||0) > 0;
+    const dPct = r.totalDownloads ? Math.max(0, Math.min(100, Math.round((r.downloads||0)/r.totalDownloads*100))) : 100;
     return `<article class="hf-card" style="animation-delay:${Math.min(i*40,300)}ms">
       <a class="hf-card-link" href="${esc(r.url)}" target="_blank" rel="noopener" aria-label="Open ${esc(r.name)} on Hugging Face"></a>
       <div class="hf-card-head">
@@ -767,12 +972,21 @@ body.hf-open{overflow:hidden}
       <div class="hf-card-tags">
         ${task?`<span class="hf-tag task">${svg('spark',12,12)}${esc(task)}</span>`:''}
         ${r.license?`<span class="hf-tag lic">${svg('scale',12,12)}${esc(r.license)}</span>`:''}
+        ${hasEco?`<span class="hf-tag eco" title="Community quantizations (GGUF &amp; other formats) built on this model">${svg('layers',12,12)}${r.quantCount} quant${r.quantCount===1?'':'s'}</span>`:''}
       </div>
       ${r.summary?`<p class="hf-card-summary">${esc(r.summary)}</p>`:`<p class="hf-card-summary empty">No description available.</p>`}
       ${tags.length?`<div class="hf-card-tags" style="margin-top:10px">${tags.map(t=>`<span class="hf-tag tag-sm">${svg('tag',10,10)}${esc(t)}</span>`).join('')}</div>`:''}
+      <div class="hf-card-dl${hasEco?' has-eco':''}">
+        <div class="hf-dl-total">${svg('dl',14,14)}<b>${fmtNum(r.totalDownloads)}</b><span>${hasEco?'total downloads':'downloads'}</span></div>
+        ${hasEco?`
+        <div class="hf-dl-parts">
+          <span class="hf-part d" title="All-time downloads from this repository">${svg('dl',11,11)}${fmtNum(r.downloads)} direct</span>
+          <span class="hf-part e" title="All-time downloads from community quantizations of this model">${svg('spark',11,11)}+${fmtNum(r.quantDownloads)} in quants</span>
+        </div>
+        <div class="hf-mini-split" title="Direct ${fmtFull(r.downloads)} · Community quants ${fmtFull(r.quantDownloads)}"><i class="d" style="width:${dPct}%"></i><i class="e" style="width:${100-dPct}%"></i></div>`:''}
+      </div>
       <div class="hf-card-foot">
         <div class="hf-stats-row">
-          <span>${svg('dl',14,14)}${fmtNum(r.downloads)}</span>
           <span>${svg('heart',14,14)}${fmtNum(r.likes)}</span>
         </div>
         <span class="hf-card-date">${fmtDate(r.lastModified||r.createdAt)}</span>
@@ -802,6 +1016,10 @@ body.hf-open{overflow:hidden}
     const task = humanTask(repo.task);
     const card = $('#hf-modal-card');
     const allTags = repo.tags;
+    const hasEco = (repo.quantDownloads||0) > 0;
+    const dPct = repo.totalDownloads ? Math.max(0, Math.min(100, Math.round((repo.downloads||0)/repo.totalDownloads*100))) : 100;
+    const quants = repo.quants || [];
+    const ggufCount = quants.filter(q=>q.isGGUF).length;
     card.innerHTML = `
       <button class="hf-modal-x" id="hf-modal-x" aria-label="Close details">${svg('x',18,18)}</button>
       <div class="hf-modal-head">
@@ -819,12 +1037,39 @@ body.hf-open{overflow:hidden}
         </div>
       </div>
       <div class="hf-modal-body">
-        <div class="hf-modal-stats">
-          <div class="hf-modal-stat"><div class="hf-modal-stat-ic">${svg('dl',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.downloads)}</div><div class="hf-modal-stat-lbl">Downloads</div></div>
+        <div class="hf-modal-stats${isModel?' cols3':''}">
+          ${isModel?`
+          <div class="hf-modal-stat t-total"><div class="hf-modal-stat-ic">${svg('dl',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.totalDownloads)}</div><div class="hf-modal-stat-lbl">Total Downloads</div></div>
+          <div class="hf-modal-stat t-direct"><div class="hf-modal-stat-ic">${svg('dl',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.downloads)}</div><div class="hf-modal-stat-lbl">Direct Downloads</div></div>
+          <div class="hf-modal-stat t-eco"><div class="hf-modal-stat-ic" style="color:#5eead4">${svg('layers',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.quantDownloads)}</div><div class="hf-modal-stat-lbl">Ecosystem · Quants</div></div>`:`
+          <div class="hf-modal-stat"><div class="hf-modal-stat-ic">${svg('dl',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.downloads)}</div><div class="hf-modal-stat-lbl">Downloads</div></div>`}
           <div class="hf-modal-stat"><div class="hf-modal-stat-ic" style="color:#fb7185">${svg('heart',18,18)}</div><div class="hf-modal-stat-val">${fmtNum(repo.likes)}</div><div class="hf-modal-stat-lbl">Likes</div></div>
           <div class="hf-modal-stat"><div class="hf-modal-stat-ic">${svg('cal',18,18)}</div><div class="hf-modal-stat-val" style="font-size:14px">${fmtDate(repo.createdAt)}</div><div class="hf-modal-stat-lbl">Created</div></div>
           <div class="hf-modal-stat"><div class="hf-modal-stat-ic" style="color:#5eead4">${svg('cal',18,18)}</div><div class="hf-modal-stat-val" style="font-size:14px">${fmtDate(repo.lastModified||repo.createdAt)}</div><div class="hf-modal-stat-lbl">Updated</div></div>
         </div>
+        ${isModel?`
+        <div class="hf-modal-section">
+          <h4 class="hf-modal-h4">${svg('dl',14,14)} Download Breakdown <span class="hf-modal-h4-sub">direct vs ecosystem</span></h4>
+          <div class="hf-modal-dlbar"><i class="d" style="width:${dPct}%"></i><i class="e" style="width:${100-dPct}%"></i></div>
+          <div class="hf-modal-dllegend">
+            <span><i class="dot d" aria-hidden="true"></i><b>Direct</b> — all-time downloads of this repository: <b>${fmtFull(repo.downloads)}</b> (${dPct}%)</span>
+            <span><i class="dot e" aria-hidden="true"></i><b>Ecosystem</b> — community quantizations of this model: <b>${fmtFull(repo.quantDownloads||0)}</b> (${100-dPct}%)</span>
+          </div>
+        </div>`:''}
+        ${quants.length?`
+        <div class="hf-modal-section">
+          <h4 class="hf-modal-h4">${svg('layers',14,14)} Community Quantizations <span class="hf-modal-h4-sub">${quants.length} repo${quants.length===1?'':'s'} · ${fmtFull(repo.quantDownloads)} downloads${ggufCount?` · ${ggufCount} GGUF-confirmed`:''}</span></h4>
+          <p class="hf-modal-eco-note">Quantizations of <b>${esc(repo.id)}</b> published by the community — their all-time downloads roll up into the ecosystem total above. GGUF status is verified from actual repository files.</p>
+          <div class="hf-deriv-list">
+            ${quants.map(q=>`
+            <a class="hf-deriv-row" href="${esc(q.url)}" target="_blank" rel="noopener">
+              <span class="hf-deriv-ic ${q.isGGUF?'gguf':'other'}">${svg('box',14,14)}</span>
+              <span class="hf-deriv-id">${esc(q.id)}</span>
+              <span class="hf-deriv-type ${q.isGGUF?'gguf':'other'}" title="${q.isGGUF?(q.ggufEvidence==='files'?q.ggufFiles+' .gguf files in repo':'Hub GGUF metadata'):'quantized relation, no .gguf files'}">${q.isGGUF?'GGUF':'Quant'}</span>
+              <span class="hf-deriv-dl">${svg('dl',12,12)}${fmtNum(q.downloads)}</span>
+            </a>`).join('')}
+          </div>
+        </div>`:''}
         ${repo.summary?`<div class="hf-modal-section"><h4 class="hf-modal-h4">${svg('spark',14,14)} Overview</h4><p class="hf-modal-p">${esc(repo.summary)}</p></div>`:''}
         <div class="hf-modal-meta">
           ${isModel&&repo.baseModels.length?`<div class="hf-modal-metarow"><span class="hf-modal-meta-ic">${svg('layers',14,14)}</span><div><div class="hf-modal-meta-lbl">Base Model</div><div class="hf-modal-meta-val" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#5eead4">${esc(repo.baseModels.join(', '))}</div></div></div>`:''}
@@ -850,10 +1095,13 @@ body.hf-open{overflow:hidden}
   }
 
   /* ---------- load ---------- */
-  async function load(){
+  const STALE_MS = 5*60*1000; // re-fetch automatically when data is older than 5 minutes
+  async function load(silent){
     if(state.loading) return;
     state.loading = true;
-    renderSkeleton();
+    const rbtn = $('#hf-refresh');
+    if(rbtn) rbtn.classList.add('spin');
+    if(!silent) renderSkeleton();
     try{
       // Using expand[]= REPLACES the default response fields, so we explicitly
       // request every field we use: all-time downloads (downloadsAllTime),
@@ -869,14 +1117,14 @@ body.hf-open{overflow:hidden}
       state.models = (models||[]).map(m=>normModel(m));
       state.datasets = (datasets||[]).map(d=>normDataset(d));
       state.user = user;
-      state.models.sort((a,b)=>(b.downloads||0)-(a.downloads||0)||(b.likes||0)-(a.likes||0));
+      state.models.sort((a,b)=>(b.totalDownloads||0)-(a.totalDownloads||0)||(b.likes||0)-(a.likes||0));
       state.datasets.sort((a,b)=>(b.downloads||0)-(a.downloads||0)||(b.likes||0)-(a.likes||0));
       // README summaries (best-effort, capped concurrency).
       // For gated/restricted repos where the README returns 401, fall back to
       // the per-repo API's cardData (YAML frontmatter) and synthesize a
       // description from the metadata.
       const repos = [...state.models.map(m=>({id:m.id,t:'m'})), ...state.datasets.map(d=>({id:d.id,t:'d'}))];
-      await runPool(repos, 6, async r=>{
+      const readmePool = runPool(repos, 6, async r=>{
         const txt = await fetchReadme(r.id);
         let sum = extractSummary(txt);
         if(r.t==='m'){
@@ -895,6 +1143,45 @@ body.hf-open{overflow:hidden}
           if(d) d.summary = sum || extractSummary(d.description);
         }
       });
+      // Community quantization pass: for every model, discover the community
+      // quantizations (base_model:quantized relation) published by OTHERS and
+      // roll their all-time downloads into the model's ecosystem / total
+      // numbers. A GLOBAL deduplication map guarantees every community repo
+      // is counted exactly ONCE in the profile-wide ecosystem total, even if
+      // it is linked to several of the account's models. Own-account quants
+      // are excluded (already part of direct downloads). Runs concurrently
+      // with the README pass; both pools are capped to stay gentle on the API.
+      const uniqueQuants = new Map(); // repo id -> {downloads, isGGUF, parents:Set}
+      let duplicateAssociations = 0;
+      const ecoPool = runPool(state.models, 5, async m=>{
+        const quants = await fetchQuantizations(m.id);
+        if(!quants) return; // failed lookup -> model stays direct-only
+        m.quants = quants;
+        m.quantCount = quants.length;
+        m.quantDownloads = quants.reduce((s,q)=>s+(q.downloads||0),0);
+        m.totalDownloads = (m.downloads||0) + m.quantDownloads;
+        for(const q of quants){
+          const e = uniqueQuants.get(q.id);
+          if(e){ e.parents.add(m.id); duplicateAssociations++; }
+          else uniqueQuants.set(q.id, {downloads:q.downloads||0, isGGUF:q.isGGUF, parents:new Set([m.id])});
+        }
+      });
+      await Promise.all([readmePool, ecoPool]);
+      // Profile-wide ecosystem totals — computed from UNIQUE community repos
+      // so no download is ever double-counted across base models.
+      let communityTotal = 0, communityGGUFTotal = 0, communityOtherTotal = 0, communityGGUFRepos = 0;
+      uniqueQuants.forEach(e=>{
+        communityTotal += e.downloads;
+        if(e.isGGUF){ communityGGUFTotal += e.downloads; communityGGUFRepos++; }
+        else communityOtherTotal += e.downloads;
+      });
+      state.eco = {
+        communityTotal, communityGGUFTotal, communityOtherTotal, communityGGUFRepos,
+        uniqueRepos: uniqueQuants.size, duplicateAssociations
+      };
+      // Re-sort now that ecosystem numbers are in — "most downloaded" means
+      // the complete total (direct + community quantizations).
+      state.models.sort((a,b)=>(b.totalDownloads||0)-(a.totalDownloads||0)||(b.likes||0)-(a.likes||0));
       state.fetchedAt = new Date().toISOString();
       state.loaded = true;
       renderHero(user);
@@ -903,6 +1190,8 @@ body.hf-open{overflow:hidden}
       renderError(e&&e.message||'Unknown error');
     }finally{
       state.loading = false;
+      const rbtn = $('#hf-refresh');
+      if(rbtn) rbtn.classList.remove('spin');
     }
   }
   function runPool(items, n, fn){
@@ -922,6 +1211,7 @@ body.hf-open{overflow:hidden}
     $$('.hf-tab').forEach(b=>b.onclick=()=>setActiveTab(b.dataset.tab));
     $('#hf-search').oninput = e=>{ query=e.target.value; renderGrid(); };
     $('#hf-sort').onchange = e=>{ sort=e.target.value; renderGrid(); };
+    $('#hf-refresh').onclick = ()=>load(true); // silent refresh, keeps current data visible
     $('#hf-grid').addEventListener('click', e=>{
       const btn = e.target.closest('[data-details]');
       if(!btn) return;
@@ -949,7 +1239,12 @@ body.hf-open{overflow:hidden}
   function openOverlay(){
     overlay.hidden = false;
     document.body.classList.add('hf-open');
+    // Live data: load on first open, and automatically re-fetch whenever the
+    // cached data has gone stale, so any update on Hugging Face (new models,
+    // new community quants, new download counts) is reflected automatically.
+    const age = state.fetchedAt ? Date.now() - new Date(state.fetchedAt).getTime() : Infinity;
     if(!state.loaded && !state.loading) load();
+    else if(state.loaded && age > STALE_MS && !state.loading) load(true);
   }
   function closeOverlay(){
     overlay.hidden = true;
