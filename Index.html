@@ -177,10 +177,40 @@ const tags=['Python','PyTorch','Transformers','LoRA / QLoRA','Continued Pre-Trai
 $('marquee').innerHTML=[...tags,...tags].map(t=>`<span class="glass px-3.5 py-1.5 rounded-lg text-sm text-steel-100 font-mono">${t}</span>`).join('');
 
 const tg=a=>a.map(t=>`<span class="tag px-3 py-1 bg-steel-50 border border-steel-200 rounded-lg text-xs text-steel-500 font-mono">${t}</span>`).join('');
+/* ---------- experience card building blocks (shared by every entry) ---------- */
+const badgeHtml=b=>b?`<span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-blue-100">${b}</span>`:'';
+const dateHtml=d=>`<span class="text-sm text-steel-400 font-mono">${d}</span>`;
+const locHtml=l=>`<p class="flex items-center gap-1 text-sm text-steel-500 mt-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-accent"></i>${l}</p>`;
+const logoHtml=j=>`<div class="shrink-0 w-16 h-16 md:w-20 md:h-20 border border-steel-200 rounded-xl bg-white p-2.5 flex items-center justify-center"><img src="${j.logo}" alt="${j.org}" class="w-full h-full object-contain rounded"></div>`;
+const ptsHtml=p=>p&&p.length?`<ul class="space-y-2.5 list-disc list-outside ml-5 text-steel-600 text-[15px] leading-relaxed mb-5">${p.map(x=>`<li>${x}</li>`).join('')}</ul>`:'';
+const tagsHtml=t=>t&&t.length?`<div class="flex flex-wrap gap-2">${tg(t)}</div>`:'';
+
+/* one company / one role → renders exactly like the original cards */
+const singleRoleCard=j=>`<div class="flex gap-5 mb-5">${logoHtml(j)}
+<div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-1.5">${badgeHtml(j.badge)}${dateHtml(j.date)}</div>
+<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.role}</h3><p class="text-accent font-semibold">${j.org}</p>
+${locHtml(j.loc)}</div></div>${ptsHtml(j.pts)}${tagsHtml(j.tags)}`;
+
+/* one company / multiple roles → company header + one sub-section per role */
+const roleBlock=r=>{const has=(r.pts&&r.pts.length)||(r.tags&&r.tags.length);
+return `<div>
+<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 ${has?'mb-3':''}">
+<h4 class="text-lg md:text-xl font-bold tracking-tight">${r.role}</h4>
+<span class="text-[13px] text-steel-400 font-mono">${r.date}</span></div>
+${ptsHtml(r.pts)}${tagsHtml(r.tags)}</div>`};
+const multiRoleCard=j=>`<div class="flex gap-5 mb-6 pb-6 border-b border-steel-100">${logoHtml(j)}
+<div class="min-w-0 self-center"><div class="flex flex-wrap items-center gap-2 mb-1.5">${badgeHtml(j.badge)}${dateHtml(j.date)}</div>
+<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.org}</h3>
+${locHtml(j.loc)}</div></div>
+<div>${j.roles.map(roleBlock).join('<div class="divider my-6"></div>')}</div>`;
+
 const jobs=[
-{logo:'Excelra.jpg',role:'AI Engineer',org:'Excelra',date:'May 2026 — Present',loc:'Hyderabad, Telangana',badge:'',
- pts:['Lead a team for integrating and deploying 7 AI Powered Courses on Life Sciences for employee training','Built a MultiOmics and Drug Repurposing AI Agent with Qwen9B'],
- tags:['AI Agents','Qwen','Multi-Omics','Drug Repurposing','Life Sciences','Team Leadership']},
+{logo:'Excelra.jpg',org:'Excelra',date:'May 2026 — Present',loc:'Hyderabad, Telangana',badge:'',
+ roles:[
+  {role:'AI Engineer',date:'October 2026 — Present'},
+  {role:'Graduate Trainee',date:'May 2026 — September 2026',
+   pts:['Lead a team for integrating and deploying 7 AI Powered Courses on Life Sciences for employee training','Built a MultiOmics and Drug Repurposing AI Agent with Qwen9B'],
+   tags:['AI Agents','Qwen','Multi-Omics','Drug Repurposing','Life Sciences','Team Leadership']}]},
 {logo:'APU%20Logo.webp',role:'Applied AI Engineer',org:'Asia Pacific University (APU)',date:'December 2024 — August 2025',loc:'Kuala Lumpur, Malaysia',badge:'Final Year Project',
  pts:['Led development of MediGuardAI Rover, an autonomous mobile healthcare security system with patrol, emergency intervention, and LLM-assisted medical support capabilities','Architected the reasoning layer on LLaMA 4 Maverick, backed by a 14.5B-token RAG database and 14 fine-tuned ResNet-50 diagnostic classifiers for medical imaging','Built additional platform features including 10 interactive visualizations, a cognitive rehabilitation game, ASMR therapy, and an emergency support module','Development was supported by a sponsored NVIDIA RTX 4090 GPU; the project went on to win 6 international awards (see Recognition)'],
  tags:['Large Language Models (LLM)','Retrieval-Augmented Generation (RAG)','Convolutional Neural Networks (CNN)','Agentic AI Development']},
@@ -188,11 +218,7 @@ const jobs=[
  pts:['Built a Multi-Modal Face and Voice Authentication system with Gaussian Mixture Model and Deep Learning (CNN), achieving 75% accuracy','Optimised PorteusOS for deployment by cutting boot time by 15 seconds and UI modification','Supervised fine-tuning of Small Language Models on medical datasets and integrated Retrieval-Augmented Generation to reduce hallucinations'],
  tags:['Biometrics','CNN','SLM Fine-Tuning','RAG']}];
 $('exp').innerHTML=jobs.map((j,i)=>`<div class="reveal relative" style="transition-delay:${i*80}ms"><span class="dot"></span>
-<div class="card p-7 md:p-9"><div class="flex gap-5 mb-5"><div class="shrink-0 w-16 h-16 md:w-20 md:h-20 border border-steel-200 rounded-xl bg-white p-2.5 flex items-center justify-center"><img src="${j.logo}" alt="${j.org}" class="w-full h-full object-contain rounded"></div>
-<div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-1.5">${j.badge?`<span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-blue-100">${j.badge}</span>`:''}<span class="text-sm text-steel-400 font-mono">${j.date}</span></div>
-<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.role}</h3><p class="text-accent font-semibold">${j.org}</p>
-<p class="flex items-center gap-1 text-sm text-steel-500 mt-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-accent"></i>${j.loc}</p></div></div>
-<ul class="space-y-2.5 list-disc list-outside ml-5 text-steel-600 text-[15px] leading-relaxed mb-5">${j.pts.map(p=>`<li>${p}</li>`).join('')}</ul><div class="flex flex-wrap gap-2">${tg(j.tags)}</div></div></div>`).join('');
+<div class="card p-7 md:p-9">${j.roles?multiRoleCard(j):singleRoleCard(j)}</div></div>`).join('');
 
 const aw=[['iCAN 2025','Gold Medal',"Int'l Invention Competition • Toronto",'MediGuard AI Rover','trophy','yellow','39aeda1f-79ff-493a-80bd-f8b550d37b9c'],
 ['iCAN 2025','Top 10 Best Invention',"Int'l Invention Competition • Toronto",'MediGuard AI Rover','star','amber','936f1fbf-eba3-4e89-8281-d11d3b017aae'],
