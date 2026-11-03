@@ -19,8 +19,6 @@ html{scroll-behavior:smooth}
 body{background:#fff;color:#0f1c2b}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#b4c4d6;border-radius:3px}
 
-/* TOP SECTION: image is shown at 100% width, auto height => never cropped, edge to edge.
-   Overlay keeps text readable and fades the image bottom into navy (no visible seam). */
 .top{
   position:relative;
   background:
@@ -35,7 +33,6 @@ body{background:#fff;color:#0f1c2b}
 .glass{background:rgba(255,255,255,.07);border:1px solid rgba(200,216,232,.22);backdrop-filter:blur(10px)}
 
 
-/* Below-hero theme: soft bluish-silver canvas + faint mirrored wave bands from the hero image */
 body{background:#eaf0f6;position:relative}
 body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
  background:radial-gradient(circle at 12% 18%,rgba(43,127,212,.12),transparent 42%),
@@ -178,21 +175,71 @@ $('marquee').innerHTML=[...tags,...tags].map(t=>`<span class="glass px-3.5 py-1.
 
 const tg=a=>a.map(t=>`<span class="tag px-3 py-1 bg-steel-50 border border-steel-200 rounded-lg text-xs text-steel-500 font-mono">${t}</span>`).join('');
 const jobs=[
-{logo:'Excelra.jpg',role:'AI Engineer',org:'Excelra',date:'May 2026 — Present',loc:'Hyderabad, Telangana',badge:'',
- pts:['Lead a team for integrating and deploying 7 AI Powered Courses on Life Sciences for employee training','Built a MultiOmics and Drug Repurposing AI Agent with Qwen9B'],
- tags:['AI Agents','Qwen','Multi-Omics','Drug Repurposing','Life Sciences','Team Leadership']},
+{logo:'Excelra.jpg',role:'Excelra',org:'Hyderabad, Telangana',date:'',loc:'',badge:'',
+ roles:[
+   {
+     role:'AI Engineer', date:'October 2026 — Present',
+     pts:[],
+     tags:[]
+   },
+   {
+     role:'Graduate Trainee', date:'May 2026 — September 2026',
+     pts:['Lead a team for integrating and deploying 7 AI Powered Courses on Life Sciences for employee training',
+          'Built a MultiOmics and Drug Repurposing AI Agent with Qwen9B'],
+     tags:['AI Agents','Qwen','Multi-Omics','Drug Repurposing','Life Sciences','Team Leadership']
+   }
+ ]},
 {logo:'APU%20Logo.webp',role:'Applied AI Engineer',org:'Asia Pacific University (APU)',date:'December 2024 — August 2025',loc:'Kuala Lumpur, Malaysia',badge:'Final Year Project',
  pts:['Led development of MediGuardAI Rover, an autonomous mobile healthcare security system with patrol, emergency intervention, and LLM-assisted medical support capabilities','Architected the reasoning layer on LLaMA 4 Maverick, backed by a 14.5B-token RAG database and 14 fine-tuned ResNet-50 diagnostic classifiers for medical imaging','Built additional platform features including 10 interactive visualizations, a cognitive rehabilitation game, ASMR therapy, and an emergency support module','Development was supported by a sponsored NVIDIA RTX 4090 GPU; the project went on to win 6 international awards (see Recognition)'],
  tags:['Large Language Models (LLM)','Retrieval-Augmented Generation (RAG)','Convolutional Neural Networks (CNN)','Agentic AI Development']},
 {logo:'Asrix%20Prime%20Berhad.jpeg',role:'AI Engineer',org:'Asrix Prime Berhad',date:'May 2024 — October 2024',loc:'Subang Jaya, Selangor',badge:'Internship',
  pts:['Built a Multi-Modal Face and Voice Authentication system with Gaussian Mixture Model and Deep Learning (CNN), achieving 75% accuracy','Optimised PorteusOS for deployment by cutting boot time by 15 seconds and UI modification','Supervised fine-tuning of Small Language Models on medical datasets and integrated Retrieval-Augmented Generation to reduce hallucinations'],
  tags:['Biometrics','CNN','SLM Fine-Tuning','RAG']}];
-$('exp').innerHTML=jobs.map((j,i)=>`<div class="reveal relative" style="transition-delay:${i*80}ms"><span class="dot"></span>
-<div class="card p-7 md:p-9"><div class="flex gap-5 mb-5"><div class="shrink-0 w-16 h-16 md:w-20 md:h-20 border border-steel-200 rounded-xl bg-white p-2.5 flex items-center justify-center"><img src="${j.logo}" alt="${j.org}" class="w-full h-full object-contain rounded"></div>
-<div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-1.5">${j.badge?`<span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-blue-100">${j.badge}</span>`:''}<span class="text-sm text-steel-400 font-mono">${j.date}</span></div>
-<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.role}</h3><p class="text-accent font-semibold">${j.org}</p>
-<p class="flex items-center gap-1 text-sm text-steel-500 mt-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-accent"></i>${j.loc}</p></div></div>
-<ul class="space-y-2.5 list-disc list-outside ml-5 text-steel-600 text-[15px] leading-relaxed mb-5">${j.pts.map(p=>`<li>${p}</li>`).join('')}</ul><div class="flex flex-wrap gap-2">${tg(j.tags)}</div></div></div>`).join('');
+
+$('exp').innerHTML=jobs.map((j,i)=>{
+  const multi = Array.isArray(j.roles);
+  const roleBlock = multi
+    ? j.roles.map(r=>`
+        <div class="pt-5 mt-5 border-t border-steel-100 first:pt-0 first:mt-0 first:border-t-0">
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <h4 class="text-lg font-bold tracking-tight">${r.role}</h4>
+            <span class="text-sm text-steel-400 font-mono">${r.date}</span>
+          </div>
+          ${r.pts && r.pts.length
+            ? `<ul class="space-y-2.5 list-disc list-outside ml-5 text-steel-600 text-[15px] leading-relaxed mb-4">${r.pts.map(p=>`<li>${p}</li>`).join('')}</ul>`
+            : ''}
+          ${r.tags && r.tags.length ? `<div class="flex flex-wrap gap-2">${tg(r.tags)}</div>` : ''}
+        </div>`).join('')
+    : `<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.role}</h3>
+       <p class="text-accent font-semibold">${j.org}</p>
+       <ul class="space-y-2.5 list-disc list-outside ml-5 mt-3 text-steel-600 text-[15px] leading-relaxed mb-5">${j.pts.map(p=>`<li>${p}</li>`).join('')}</ul>
+       <div class="flex flex-wrap gap-2">${tg(j.tags)}</div>`;
+
+  const headerDate = multi ? '' : j.date;
+
+  return `<div class="reveal relative" style="transition-delay:${i*80}ms"><span class="dot"></span>
+    <div class="card p-7 md:p-9">
+      <div class="flex gap-5 mb-5">
+        <div class="shrink-0 w-16 h-16 md:w-20 md:h-20 border border-steel-200 rounded-xl bg-white p-2.5 flex items-center justify-center">
+          <img src="${j.logo}" alt="${multi ? 'Excelra' : j.org}" class="w-full h-full object-contain rounded">
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2 mb-1.5">
+            ${j.badge?`<span class="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-mono font-bold tracking-wider uppercase rounded-md border border-blue-100">${j.badge}</span>`:''}
+            ${headerDate?`<span class="text-sm text-steel-400 font-mono">${headerDate}</span>`:''}
+          </div>
+          ${multi
+            ? `<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.role}</h3>
+               <p class="flex items-center gap-1 text-sm text-steel-500 mt-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-accent"></i>${j.org}</p>`
+            : `<h3 class="text-xl md:text-2xl font-bold tracking-tight">${j.role}</h3>
+               <p class="text-accent font-semibold">${j.org}</p>
+               <p class="flex items-center gap-1 text-sm text-steel-500 mt-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-accent"></i>${j.loc}</p>`}
+        </div>
+      </div>
+      ${multi ? `<div class="mt-2">${roleBlock}</div>` : roleBlock}
+    </div>
+  </div>`;
+}).join('');
 
 const aw=[['iCAN 2025','Gold Medal',"Int'l Invention Competition • Toronto",'MediGuard AI Rover','trophy','yellow','39aeda1f-79ff-493a-80bd-f8b550d37b9c'],
 ['iCAN 2025','Top 10 Best Invention',"Int'l Invention Competition • Toronto",'MediGuard AI Rover','star','amber','936f1fbf-eba3-4e89-8281-d11d3b017aae'],
@@ -219,16 +266,12 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 
 /* ================================================================ */
 /*  HUGGING FACE PROFILE OVERLAY                                    */
-/*  Self-contained: live data from huggingface.co (CORS-enabled).   */
-/*  Scoped under #hf-overlay with .hf- prefixed classes so it never  */
-/*  collides with the portfolio's own styles.                        */
 /* ================================================================ */
 (function(){
   const HF_USER = 'Rumiii';
   const HF_API  = 'https://huggingface.co/api';
   const PROFILE_URL = 'https://huggingface.co/' + HF_USER;
 
-  /* ---------- small helpers ---------- */
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const fmtNum = n => n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'')+'M'
@@ -265,8 +308,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
       if(!p) continue;
       const wc = p.split(/\s+/).length;
       if(wc<4) continue;
-      // Skip question-style section headings, e.g. "What is LlamaTron RS1
-      // MedThinker?" — these are NOT descriptions, they're section headers.
       if(wc<=10 && /[?]\s*$/.test(p) && !/[.]\s/.test(p)) continue;
       const looks = /[.!?](\s|$)/.test(p) || p.length>=60;
       if(!looks && p.length<40) continue;
@@ -287,56 +328,29 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
     try{ const r=await fetch(`https://huggingface.co/${repoId}/raw/main/README.md`,{signal:c.signal}); if(!r.ok) return null; return await r.text(); }
     catch(_){ return null; } finally{ clearTimeout(tm); }
   }
-  // Fallback for gated/restricted repos (README returns 401): the per-repo
-  // API still exposes the YAML frontmatter via cardData.
   async function fetchModelCardData(repoId, ms=6000){
     const c = new AbortController(); const tm=setTimeout(()=>c.abort(),ms);
     try{ const r=await fetch(`https://huggingface.co/api/models/${repoId}?expand[]=cardData`,{signal:c.signal,headers:{Accept:'application/json'}}); if(!r.ok) return null; const d=await r.json(); return d.cardData||null; }
     catch(_){ return null; } finally{ clearTimeout(tm); }
   }
-  // ------------------------------------------------------------------
-  // DOWNLOAD METRIC — all-time only (downloadsAllTime).
-  // The 30-day `downloads` field is NEVER substituted for all-time.
-  // ------------------------------------------------------------------
   const allTime = x => (typeof x.downloadsAllTime === 'number' ? x.downloadsAllTime : 0);
 
-  // ------------------------------------------------------------------
-  // GGUF DETECTION — file-level evidence.
-  //   Primary:   actual repository filenames ending in .gguf (siblings).
-  //   Secondary: the Hub's dedicated GGUF metadata, only when file
-  //              information is unavailable.
-  //   Tags and repository names are NOT treated as proof of GGUF.
-  // ------------------------------------------------------------------
   function ggufStatus(info){
     const sib = info && info.siblings;
     if(Array.isArray(sib) && sib.length){
       const files = sib.map(s => s && typeof s === 'object' ? (s.rfilename||'') : String(s||'')).filter(Boolean);
       const ggufFiles = files.filter(f => f.toLowerCase().endsWith('.gguf'));
       if(ggufFiles.length) return {isGGUF:true, evidence:'files', count:ggufFiles.length};
-      // Sibling information is present -> authoritative file-level result.
       return {isGGUF:false, evidence:'files', count:0};
     }
-    // Secondary metadata fallback only when file information is unavailable.
     if(info && info.gguf) return {isGGUF:true, evidence:'metadata', count:0};
     return {isGGUF:false, evidence:'none', count:0};
   }
 
-  // ------------------------------------------------------------------
-  // COMMUNITY QUANTIZATION DISCOVERY.
-  // `filter=base_model:quantized:<repo_id>` returns every public repo
-  // whose model card declares a *quantized* relationship to the model —
-  // this is the correct relation for community quants (mradermacher,
-  // bartowski, unsloth, …). Plain fine-tunes that do not declare a
-  // quantized relation are NOT ecosystem quants and are excluded.
-  // Own-account quantizations are excluded as well: they are already
-  // part of the direct model download total. Repos not declaring a
-  // base_model relationship cannot be discovered this way (accepted
-  // limitation of the relationship-based method).
-  // ------------------------------------------------------------------
   async function fetchQuantizations(repoId, ms=9000){
     const filterVal = 'base_model:quantized:' + repoId.split('/').map(encodeURIComponent).join('%2F');
     const list = await fetchJSON(`${HF_API}/models?filter=${filterVal}&limit=100&expand[]=downloads&expand[]=downloadsAllTime&expand[]=likes&expand[]=lastModified&expand[]=siblings&expand[]=gguf`, ms);
-    if(!Array.isArray(list)) return null; // lookup failed -> model stays direct-only
+    if(!Array.isArray(list)) return null;
     return list
       .filter(x => x && x.id && (x.id.split('/')[0]||'').toLowerCase() !== HF_USER.toLowerCase())
       .map(x => {
@@ -352,7 +366,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
   }
   const TASK_LABELS2 = {'text-generation':'Text Generation','text-classification':'Text Classification','fill-mask':'Fill-Mask','token-classification':'Token Classification','question-answering':'Question Answering','image-classification':'Image Classification','automatic-speech-recognition':'Speech Recognition','summarization':'Summarization','translation':'Translation'};
   function humanTaskLabel2(task){ return TASK_LABELS2[task] || task.replace(/-/g,' ').replace(/\b\w/g,x=>x.toUpperCase()); }
-  // Build a meaningful description from cardData when no README is available.
   function describeFromCardData(cardData, fallbackName){
     if(!cardData) return null;
     const parts=[];
@@ -368,11 +381,9 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
     return parts.length ? parts.join(' ') : null;
   }
 
-  /* ---------- state ---------- */
   let state = { user:null, models:[], datasets:[], eco:null, fetchedAt:null, loaded:false, loading:false };
   let tab = 'models', query='', sort='downloads';
 
-  /* ---------- DOM build ---------- */
   const overlay = document.createElement('div');
   overlay.id = 'hf-overlay';
   overlay.setAttribute('hidden','');
@@ -445,7 +456,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
       </div>
     </div>
 
-    <!-- Opaque details modal -->
     <div class="hf-modal" id="hf-modal" hidden>
       <div class="hf-modal-backdrop" id="hf-modal-bg"></div>
       <div class="hf-modal-card" id="hf-modal-card" role="dialog" aria-modal="true" aria-labelledby="hf-modal-title"></div>
@@ -453,7 +463,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
   `;
   document.body.appendChild(overlay);
 
-  /* ---------- styles (scoped via #hf-overlay) ---------- */
   const style = document.createElement('style');
   style.textContent = `
 #hf-overlay{position:fixed;inset:0;z-index:200;display:none;color:#e7ecf5;font-family:Inter,system-ui,sans-serif}
@@ -626,7 +635,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-refresh.spin svg{animation:hf-rot 1s linear infinite}
 @keyframes hf-rot{to{transform:rotate(360deg)}}
 
-/* OPAQUE modal — background never shows through */
 #hf-overlay .hf-modal{position:fixed;inset:0;z-index:210;display:none}
 #hf-overlay .hf-modal:not([hidden]){display:block}
 #hf-overlay .hf-modal-backdrop{position:absolute;inset:0;background:rgba(3,6,14,.86);backdrop-filter:blur(8px);animation:hf-fade .2s both}
@@ -685,7 +693,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-error p{color:rgba(255,255,255,.6);font-size:14px;margin:0 0 20px}
 #hf-overlay .hf-retry{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:11px;border:none;background:#fbbf24;color:#0f172a;font-weight:600;cursor:pointer;font-family:inherit;font-size:14px}
 #hf-overlay .hf-retry:hover{background:#f59e0b}
-/* ---- Download impact band (hero) ---- */
 #hf-overlay .hf-dlband{margin-top:14px;border-radius:18px;padding:18px;position:relative;overflow:hidden;
   background:linear-gradient(135deg,rgba(251,191,36,.10),rgba(45,212,191,.05));
   border:1px solid rgba(251,191,36,.22);backdrop-filter:blur(18px) saturate(140%);
@@ -709,7 +716,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-dl-legend b{color:#fff;font-weight:600}
 #hf-overlay .hf-dl-sub{color:rgba(255,255,255,.45);font-size:11px}
 
-/* ---- Milestone (model ecosystem) ---- */
 #hf-overlay .hf-ms{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:9px 12px;border-radius:11px;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);font-size:12px;color:rgba(255,255,255,.6)}
 #hf-overlay .hf-ms-ic{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;
@@ -727,7 +733,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-dl-legend .dot.d,#hf-overlay .hf-modal-dllegend .dot.d{background:#fbbf24}
 #hf-overlay .hf-dl-legend .dot.e,#hf-overlay .hf-modal-dllegend .dot.e{background:#2dd4bf}
 
-/* ---- Card download block ---- */
 #hf-overlay .hf-card-dl{position:relative;z-index:1;margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
 #hf-overlay .hf-dl-total{display:flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,.85);font-variant-numeric:tabular-nums;flex-wrap:wrap}
 #hf-overlay .hf-dl-total svg{color:#fbbf24;flex:0 0 auto}
@@ -744,7 +749,6 @@ document.addEventListener('click',()=>{if(innerWidth<768)document.querySelectorA
 #hf-overlay .hf-tag.eco{border:1px solid rgba(45,212,191,.25);background:rgba(45,212,191,.1);color:#5eead4}
 #hf-overlay .hf-tag.eco svg{color:#2dd4bf}
 
-/* ---- Modal breakdown & community ecosystem ---- */
 #hf-overlay .hf-modal-stat.t-total .hf-modal-stat-val{color:#fde68a}
 #hf-overlay .hf-modal-stat.t-eco .hf-modal-stat-val{color:#5eead4}
 #hf-overlay .hf-modal-h4-sub{margin-left:auto;font-size:11px;font-weight:500;color:rgba(255,255,255,.5);text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
@@ -776,7 +780,6 @@ body.hf-open{overflow:hidden}
 `;
   document.head.appendChild(style);
 
-  /* ---------- icons ---------- */
   const ICON = {
     box:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',
     db:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>',
@@ -800,7 +803,6 @@ body.hf-open{overflow:hidden}
   };
   const svg = (name, w=16, h=16, extra='') => `<svg viewBox="0 0 24 24" width="${w}" height="${h}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${ICON[name]||''}</svg>`;
 
-  /* ---------- render skeleton ---------- */
   function renderSkeleton(){
     $('#hf-hero').innerHTML = `
       <div class="hf-skel-row">
@@ -823,17 +825,16 @@ body.hf-open{overflow:hidden}
     $('#hf-datasets-count').textContent = '…';
   }
 
-  /* ---------- render hero ---------- */
-  const MILESTONE_TARGET = 50000; // model ecosystem milestone (direct models + community quants)
+  const MILESTONE_TARGET = 50000;
   function renderHero(user){
     const u = user || {};
     const eco = state.eco || {communityTotal:0, communityGGUFTotal:0, communityOtherTotal:0, communityGGUFRepos:0, uniqueRepos:0, duplicateAssociations:0};
     const directModelsDL = state.models.reduce((s,m)=>s+(m.downloads||0),0);
     const directDatasetsDL = state.datasets.reduce((s,d)=>s+(d.downloads||0),0);
     const directDL = directModelsDL + directDatasetsDL;
-    const ecoDL = eco.communityTotal;                 // unique community quant repos, deduplicated
-    const totalDL = directDL + ecoDL;                  // total incl. datasets + community quants
-    const modelEcoDL = directModelsDL + ecoDL;         // model ecosystem (milestone metric)
+    const ecoDL = eco.communityTotal;
+    const totalDL = directDL + ecoDL;
+    const modelEcoDL = directModelsDL + ecoDL;
     const totalLikes = state.models.reduce((s,m)=>s+(m.likes||0),0) + state.datasets.reduce((s,d)=>s+(d.likes||0),0);
     const dPct = totalDL ? Math.round(directDL/totalDL*100) : 100;
     const ePct = 100 - dPct;
@@ -893,7 +894,6 @@ body.hf-open{overflow:hidden}
     $('#hf-updated').textContent = state.fetchedAt ? 'Updated ' + new Date(state.fetchedAt).toLocaleTimeString() : '';
   }
 
-  /* ---------- normalize repos ---------- */
   function skipTag(t){
     return t.startsWith('arxiv:')||t.startsWith('base_model:')||t.startsWith('dataset:')
       ||t.startsWith('task_categories:')||t.startsWith('language:')||t.startsWith('library:')
@@ -902,19 +902,13 @@ body.hf-open{overflow:hidden}
   const NOISE = new Set(['transformers','safetensors','pytorch','gguf','region:us','endpoints_compatible','text-generation-inference','conversational','license:apache-2.0','license:mit','license:llama3.2']);
   function normModel(m){
     const c = m.cardData||{};
-    // Normalize base_model to always be an array (HF returns either a string
-    // or an array depending on the model).
     const bm = c.base_model ? (Array.isArray(c.base_model)?c.base_model:[c.base_model]) : [];
-    // ALL-TIME downloads only — the 30-day metric is never substituted.
     const dl = allTime(m);
     return {
       id:m.id, name:(m.id.split('/')[1]||m.id), author:(m.id.split('/')[0]||''),
       url:'https://huggingface.co/'+m.id, kind:'model',
       task:m.pipeline_tag||c.pipeline_tag, license:licenseOf(c),
       downloads: dl, likes:m.likes||0,
-      // Community quantization numbers (linked, per model). Filled in by the
-      // ecosystem pass in load(); totalDownloads starts as the direct count
-      // and grows once community quants are discovered.
       quantCount:0, quantDownloads:0,
       totalDownloads: dl, quants:[],
       createdAt:m.createdAt, lastModified:m.lastModified,
@@ -926,14 +920,12 @@ body.hf-open{overflow:hidden}
   function normDataset(d){
     const c = d.cardData||{};
     const tc = c.task_categories&&c.task_categories[0];
-    // ALL-TIME downloads only — the 30-day metric is never substituted.
     const dl = allTime(d);
     return {
       id:d.id, name:(d.id.split('/')[1]||d.id), author:(d.id.split('/')[0]||d.author||''),
       url:'https://huggingface.co/datasets/'+d.id, kind:'dataset',
       task:tc?('task_categories:'+tc):undefined, license:licenseOf(c),
       downloads: dl, likes:d.likes||0,
-      // Datasets have no quantizations — ecosystem stays empty, total == direct.
       quantCount:0, quantDownloads:0,
       totalDownloads: dl, quants:[],
       createdAt:d.createdAt, lastModified:d.lastModified,
@@ -942,7 +934,6 @@ body.hf-open{overflow:hidden}
     };
   }
 
-  /* ---------- render grid ---------- */
   function currentList(){
     const list = (tab==='models'?state.models:state.datasets).slice();
     const q = query.trim().toLowerCase();
@@ -1010,7 +1001,6 @@ body.hf-open{overflow:hidden}
     grid.innerHTML = list.map((r,i)=>cardHTML(r,i)).join('');
   }
 
-  /* ---------- details modal ---------- */
   function openModal(repo){
     const isModel = repo.kind==='model';
     const task = humanTask(repo.task);
@@ -1087,15 +1077,13 @@ body.hf-open{overflow:hidden}
   }
   function closeModal(){ $('#hf-modal').hidden = true; }
 
-  /* ---------- error ---------- */
   function renderError(msg){
     $('#hf-hero').innerHTML = `<div class="hf-error"><div class="hf-error-ic">${svg('alert',26,26)}</div><h3>Couldn't load the profile</h3><p>${esc(msg)}</p><button class="hf-retry" id="hf-retry">${svg('refresh',16,16)} Retry</button></div>`;
     $('#hf-grid').innerHTML = '';
     $('#hf-retry').onclick = load;
   }
 
-  /* ---------- load ---------- */
-  const STALE_MS = 5*60*1000; // re-fetch automatically when data is older than 5 minutes
+  const STALE_MS = 5*60*1000;
   async function load(silent){
     if(state.loading) return;
     state.loading = true;
@@ -1103,26 +1091,17 @@ body.hf-open{overflow:hidden}
     if(rbtn) rbtn.classList.add('spin');
     if(!silent) renderSkeleton();
     try{
-      // Using expand[]= REPLACES the default response fields, so we explicitly
-      // request every field we use: all-time downloads (downloadsAllTime),
-      // plus metadata (cardData, createdAt, lastModified, tags, ...) so even
-      // gated repos get their license/base_model/tags without a separate call.
       const [user, models, datasets] = await Promise.all([
         fetchJSON(`${HF_API}/users/${HF_USER}/overview`),
         fetchJSON(`${HF_API}/models?author=${HF_USER}&full=true&limit=100&expand[]=downloads&expand[]=downloadsAllTime&expand[]=likes&expand[]=createdAt&expand[]=lastModified&expand[]=cardData&expand[]=tags&expand[]=pipeline_tag&expand[]=library_name`),
         fetchJSON(`${HF_API}/datasets?author=${HF_USER}&full=true&limit=100&expand[]=downloads&expand[]=downloadsAllTime&expand[]=likes&expand[]=createdAt&expand[]=lastModified&expand[]=cardData&expand[]=tags`)
       ]);
       if(!models && !datasets && !user) throw new Error('Hugging Face API is unreachable.');
-      // Normalize BEFORE sorting/summing so the all-time count is used everywhere.
       state.models = (models||[]).map(m=>normModel(m));
       state.datasets = (datasets||[]).map(d=>normDataset(d));
       state.user = user;
       state.models.sort((a,b)=>(b.totalDownloads||0)-(a.totalDownloads||0)||(b.likes||0)-(a.likes||0));
       state.datasets.sort((a,b)=>(b.downloads||0)-(a.downloads||0)||(b.likes||0)-(a.likes||0));
-      // README summaries (best-effort, capped concurrency).
-      // For gated/restricted repos where the README returns 401, fall back to
-      // the per-repo API's cardData (YAML frontmatter) and synthesize a
-      // description from the metadata.
       const repos = [...state.models.map(m=>({id:m.id,t:'m'})), ...state.datasets.map(d=>({id:d.id,t:'d'}))];
       const readmePool = runPool(repos, 6, async r=>{
         const txt = await fetchReadme(r.id);
@@ -1131,7 +1110,6 @@ body.hf-open{overflow:hidden}
           const m=state.models.find(x=>x.id===r.id);
           if(m){
             if(!sum){
-              // Gated/restricted repo: fetch cardData and synthesize a fallback.
               const cd = m.cardData || await fetchModelCardData(r.id);
               if(cd) m.cardData = m.cardData || cd;
               sum = describeFromCardData(cd, m.name);
@@ -1143,19 +1121,11 @@ body.hf-open{overflow:hidden}
           if(d) d.summary = sum || extractSummary(d.description);
         }
       });
-      // Community quantization pass: for every model, discover the community
-      // quantizations (base_model:quantized relation) published by OTHERS and
-      // roll their all-time downloads into the model's ecosystem / total
-      // numbers. A GLOBAL deduplication map guarantees every community repo
-      // is counted exactly ONCE in the profile-wide ecosystem total, even if
-      // it is linked to several of the account's models. Own-account quants
-      // are excluded (already part of direct downloads). Runs concurrently
-      // with the README pass; both pools are capped to stay gentle on the API.
-      const uniqueQuants = new Map(); // repo id -> {downloads, isGGUF, parents:Set}
+      const uniqueQuants = new Map();
       let duplicateAssociations = 0;
       const ecoPool = runPool(state.models, 5, async m=>{
         const quants = await fetchQuantizations(m.id);
-        if(!quants) return; // failed lookup -> model stays direct-only
+        if(!quants) return;
         m.quants = quants;
         m.quantCount = quants.length;
         m.quantDownloads = quants.reduce((s,q)=>s+(q.downloads||0),0);
@@ -1167,8 +1137,6 @@ body.hf-open{overflow:hidden}
         }
       });
       await Promise.all([readmePool, ecoPool]);
-      // Profile-wide ecosystem totals — computed from UNIQUE community repos
-      // so no download is ever double-counted across base models.
       let communityTotal = 0, communityGGUFTotal = 0, communityOtherTotal = 0, communityGGUFRepos = 0;
       uniqueQuants.forEach(e=>{
         communityTotal += e.downloads;
@@ -1179,8 +1147,6 @@ body.hf-open{overflow:hidden}
         communityTotal, communityGGUFTotal, communityOtherTotal, communityGGUFRepos,
         uniqueRepos: uniqueQuants.size, duplicateAssociations
       };
-      // Re-sort now that ecosystem numbers are in — "most downloaded" means
-      // the complete total (direct + community quantizations).
       state.models.sort((a,b)=>(b.totalDownloads||0)-(a.totalDownloads||0)||(b.likes||0)-(a.likes||0));
       state.fetchedAt = new Date().toISOString();
       state.loaded = true;
@@ -1200,7 +1166,6 @@ body.hf-open{overflow:hidden}
     return Promise.all(workers);
   }
 
-  /* ---------- events ---------- */
   function setActiveTab(t){
     tab = t;
     $$('.hf-tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
@@ -1211,7 +1176,7 @@ body.hf-open{overflow:hidden}
     $$('.hf-tab').forEach(b=>b.onclick=()=>setActiveTab(b.dataset.tab));
     $('#hf-search').oninput = e=>{ query=e.target.value; renderGrid(); };
     $('#hf-sort').onchange = e=>{ sort=e.target.value; renderGrid(); };
-    $('#hf-refresh').onclick = ()=>load(true); // silent refresh, keeps current data visible
+    $('#hf-refresh').onclick = ()=>load(true);
     $('#hf-grid').addEventListener('click', e=>{
       const btn = e.target.closest('[data-details]');
       if(!btn) return;
@@ -1222,7 +1187,6 @@ body.hf-open{overflow:hidden}
       if(repo) openModal(repo);
     });
     $('#hf-modal-bg').onclick = closeModal;
-    // Wire the portfolio's Hugging Face buttons to open this overlay.
     ['hf-open-btn','hf-open-btn-m'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.addEventListener('click', openOverlay);
@@ -1235,13 +1199,9 @@ body.hf-open{overflow:hidden}
     });
   }
 
-  /* ---------- open / close overlay ---------- */
   function openOverlay(){
     overlay.hidden = false;
     document.body.classList.add('hf-open');
-    // Live data: load on first open, and automatically re-fetch whenever the
-    // cached data has gone stale, so any update on Hugging Face (new models,
-    // new community quants, new download counts) is reflected automatically.
     const age = state.fetchedAt ? Date.now() - new Date(state.fetchedAt).getTime() : Infinity;
     if(!state.loaded && !state.loading) load();
     else if(state.loaded && age > STALE_MS && !state.loading) load(true);
@@ -1250,11 +1210,9 @@ body.hf-open{overflow:hidden}
     overlay.hidden = true;
     document.body.classList.remove('hf-open');
   }
-  // expose openers
   window.__openHF = openOverlay;
 
   bind();
-  // initial active tab
   setActiveTab('models');
 })();
 </script>
